@@ -27,6 +27,18 @@ table_aism<- read_qza("Data/filt_table_aism.qza")$data
 table_aisc<- read_qza("Data/filt_table_aisc.qza")$data
 table_ajis<- read_qza("Data/filt_table_ajis.qza")$data
 
+
+
+table_oim<- table_oim[,match(colnames(table_oc), colnames(table_oim))]
+table_oism<- table_oism[,match(colnames(table_oc), colnames(table_oism))]
+table_ojis<- table_ojis[,match(colnames(table_oc), colnames(table_ojis))]
+table_oiss<- table_oiss[,match(colnames(table_oc), colnames(table_oiss))]
+
+table_ac<- table_ac[,match(colnames(table_oc), colnames(table_ac))]
+table_aism <- table_aism[,match(colnames(table_oc), colnames(table_aism))]
+table_aisc <- table_aisc[,match(colnames(table_oc), colnames(table_aisc))]
+table_ajis <- table_ajis[,match(colnames(table_oc), colnames(table_ajis))]
+
 list_table<- list(table_oc, table_oim, table_oism, table_ojis, table_oiss,
                   table_ac, table_aism, table_aisc, table_ajis)
 names(list_table)<- c("OC", "OIM", "OISM", "OJIS", "OISS",
@@ -119,6 +131,11 @@ plot_turn<- mapply(function_plot_beta, tud, envs, SIMPLIFY = F)
 
 plot_nes<- mapply(function_plot_beta, ned, envs, SIMPLIFY = F)
 
+saveRDS(plot_jac, "Data/plot_jac.RDS")
+saveRDS(plot_turn, "Data/plot_turn.RDS")
+saveRDS(plot_nes, "Data/plot_nes.RDS")
+
+
 #library(cowplot)
 #leg<- get_legend(plot_jac[[1]])
 #a<-plot_grid(plot_jac[[1]]+theme(legend.position = "none"), plot_turn[[1]]+theme(legend.position = "none"), plot_nes[[1]]+theme(legend.position = "none"), ncol = 3, align = "hv")
@@ -175,9 +192,9 @@ subplot(plot_jac[[9]]+theme(legend.position = "none"),
 
 #betapart season
 
-#nam<- colnames(table_ac)
-#nam2<- str_extract(nam, pattern = "^\\d+")
-#nam3<- unique(nam2)
+nam<- colnames(table_ac)
+nam2<- str_extract(nam, pattern = "^\\d+")
+nam3<- unique(nam2)
 
 drys<- paste0(nam3,"D")
 rainys<- paste0(nam3,"R")
@@ -236,4 +253,9 @@ fig <- fig %>% layout(boxmode = "group")
 
 fig
 
-write.csv(table_turns, "../Data/table_turns.csv")
+write.csv(table_turns, "Data/table_turns.csv")
+write.csv(table_jacs, "Data/table_jacs.csv")
+write.csv(table_nes, "Data/table_nes.csv")
+
+
+

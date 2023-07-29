@@ -36,6 +36,29 @@ taxa_aisc<- read_qza("Data/taxonomy_sklearn_aisc.qza")$data
 taxa_ajis<- read_qza("Data/taxonomy_ajis.qza")$data
 
 
+table_oim<- table_oim[,match(colnames(table_oc), colnames(table_oim))]
+table_oism<- table_oism[,match(colnames(table_oc), colnames(table_oism))]
+table_ojis<- table_ojis[,match(colnames(table_oc), colnames(table_ojis))]
+table_oiss<- table_oiss[,match(colnames(table_oc), colnames(table_oiss))]
+
+table_ac<- table_ac[,match(colnames(table_oc), colnames(table_ac))]
+table_aism <- table_aism[,match(colnames(table_oc), colnames(table_aism))]
+table_aisc <- table_aisc[,match(colnames(table_oc), colnames(table_aisc))]
+table_ajis <- table_ajis[,match(colnames(table_oc), colnames(table_ajis))]
+
+filt_table_oc <- filt_table_oc[,match(colnames(table_oc), colnames(filt_table_oc))]
+filt_table_oim <- filt_table_oim[,match(colnames(table_oc), colnames(filt_table_oim))]
+filt_table_oism <- filt_table_oism[,match(colnames(table_oc), colnames(filt_table_oism))]
+filt_table_ojis <- filt_table_ojis[,match(colnames(table_oc), colnames(filt_table_ojis))]
+filt_table_oiss <- filt_table_oiss[,match(colnames(table_oc), colnames(filt_table_oiss))]
+
+filt_table_ac <- filt_table_ac[,match(colnames(table_oc), colnames(filt_table_ac))]
+filt_table_aism <- filt_table_aism[,match(colnames(table_oc), colnames(filt_table_aism))]
+filt_table_aisc <- filt_table_aisc[,match(colnames(table_oc), colnames(filt_table_aisc))]
+filt_table_ajis <- filt_table_ajis[,match(colnames(table_oc), colnames(filt_table_ajis))]
+
+
+
 list_table<- list(table_oc, table_oim, table_oism, table_ojis, table_oiss,
                   table_ac, table_aism, table_aisc, table_ajis)
 names(list_table)<- c("OC", "OIM", "OISM", "OJIS", "OISS",
@@ -232,9 +255,10 @@ i<-pca_new(pca = pcas[[9]], taxonomys = taxa_ajis, scales = 800)+theme(legend.po
 
 
 
-ggplotly(a)
 
 library(plotly)
+ggplotly(a)
+
 subplot(a,b, c)
 
 tab<-do.call("rbind", lapply(permd, "[[", 1)) %>% 
@@ -263,3 +287,6 @@ ggtexttable(tab, theme = ttheme("blank"), rows = NULL) %>%
   tab_add_vline(at.column = 2:tab_ncol(.), column.side = "left", from.row = 2, linetype = 2) %>%
   table_cell_font(row = c(7,8,9), column = 3, face = "bold")
   
+saveRDS(pcas, "Data/pcas.RDS")
+write.csv(tab, "tab.csv")
+write.csv(tab2, "tab2.csv")
