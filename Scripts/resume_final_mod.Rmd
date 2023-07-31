@@ -16,6 +16,19 @@ Para establecer el mejor flujo de trabajo se siguieron varios flujos de trabajos
 knitr::include_graphics("../Figures/figure_workflows.jpg")
 ```
 
+Claves de cada método:
+
+- OC : Cutadapt + OTUS (qiime2)
+- OIM : Itsxpress dentro de qiime2 y luego exportado (para remover empty seqs) y luego importado nuveamente para seguir con el flujo de trabajo de OTUS.
+- OISM : Itsxpress standalone (por fuera) con la opción de que hiciera el merged y luego importadas a qiime2 (unidas), seguido por OTUS como single.
+- OJIS : Reads joined dentro de qiime2 y luego exportadas para Itsxpress y luego importadas a qiime2 nuevamente para seguir el flujo de OTUs.
+- OISS :  Itsxpress standalone (por fuera) con la opción de que NO hiciera el merged y luego importadas a qiime2 (separados), seguido por unidas con vsearch y luego flujo de OTUS.
+
+- AC : Cutadapt + DADA2 (en R) y luego importadas para lo demás en qiime2
+- AISM : Itsxpress standalone (por fuera) con la opción de que hiciera el merged y DADA2 (en R) luego importadas a qiime2 
+- AJIS : Reads joined dentro de qiime2 y luego exportadas para Itsxpress y DADA2 (en R), luego importadas a qiime2 
+- AISC :  Itsxpress standalone (por fuera) con la opción de que NO hiciera el merged y DADA2 (en R) luego importadas a qiime2 (separados), necesitaron cutadapat en DADA2 porque en algunos casos salieron primers. 
+
 
 ## RESUMEN READS Y FEATURES
 
