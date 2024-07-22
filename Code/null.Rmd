@@ -1,0 +1,330 @@
+---
+title: "Guilds"
+output: html_document
+date: "2024-06-03"
+---
+
+```{r}
+# Incidence-based Raup-Crick beta-diversity
+library(qiime2R)
+library(tidyverse)
+library(vegan)
+library(readxl)
+library(reshape2)
+library(ggpubr)
+library(ggh4x)
+
+
+abund_table=read_qza("../Data/table_SMOQ_rar.qza")$data #
+abund_table=read_qza("../Data/table_SMOQ.qza")$data #
+
+
+dry<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_secas_all") %>% mutate(Season="Dry")
+wet<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_lluvias_all") %>% mutate(Season="Wet")
+
+drys<- dry %>% dplyr::select( Poligono,Sitio,Transecto,pH,MO,N,P,Season)
+wets<- wet %>% dplyr::select(Poligono,Sitio,Transecto,pH,MO,N,P,Season)
+
+metadata<- rbind(drys,wets) %>% mutate(sea=c(rep("D",36), rep("R",36))) %>% 
+  unite("SampleID", c("Poligono", "Sitio", "Transecto", "sea"),remove = F, sep = "") %>% column_to_rownames(var = "SampleID")
+
+meta_table=metadata
+meta_table$Poligono<- as.factor(meta_table$Poligono)
+
+
+tp1d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="1"),]
+tp2d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="2"),]
+tp3d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="3"),]
+tp4d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="4"),]
+tp5d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="5"),]
+tp6d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="6"),]
+
+
+tp1r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="1"),]
+tp2r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="2"),]
+tp3r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="3"),]
+tp4r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="4"),]
+tp5r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="5"),]
+tp6r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="6"),]
+
+
+tp1di=row.names(tp1d)
+tp2di=row.names(tp2d)
+tp3di=row.names(tp3d)
+tp4di=row.names(tp4d)
+tp5di=row.names(tp5d)
+tp6di=row.names(tp6d)
+
+tp1ri=row.names(tp1r)
+tp2ri=row.names(tp2r)
+tp3ri=row.names(tp3r)
+tp4ri=row.names(tp4r)
+tp5ri=row.names(tp5r)
+tp6ri=row.names(tp6r)
+
+abund_table=t(abund_table)
+row.names(abund_table)
+
+
+
+abund_table1d=subset(abund_table, row.names(abund_table) %in% tp1di)
+abund_table2d=subset(abund_table, row.names(abund_table) %in% tp2di)
+abund_table3d=subset(abund_table, row.names(abund_table) %in% tp3di)
+abund_table4d=subset(abund_table, row.names(abund_table) %in% tp4di)
+abund_table5d=subset(abund_table, row.names(abund_table) %in% tp5di)
+abund_table6d=subset(abund_table, row.names(abund_table) %in% tp6di)
+
+abund_table1r=subset(abund_table, row.names(abund_table) %in% tp1ri)
+abund_table2r=subset(abund_table, row.names(abund_table) %in% tp2ri)
+abund_table3r=subset(abund_table, row.names(abund_table) %in% tp3ri)
+abund_table4r=subset(abund_table, row.names(abund_table) %in% tp4ri)
+abund_table5r=subset(abund_table, row.names(abund_table) %in% tp5ri)
+abund_table6r=subset(abund_table, row.names(abund_table) %in% tp6ri)
+
+
+abund_table1d = abund_table1d[,which(colSums(abund_table1d) != 0)]
+abund_table2d = abund_table2d[,which(colSums(abund_table2d) != 0)]
+abund_table3d = abund_table3d[,which(colSums(abund_table3d) != 0)]
+abund_table4d = abund_table4d[,which(colSums(abund_table4d) != 0)]
+abund_table5d = abund_table5d[,which(colSums(abund_table5d) != 0)]
+abund_table6d = abund_table6d[,which(colSums(abund_table6d) != 0)]
+
+abund_table1r = abund_table1r[,which(colSums(abund_table1r) != 0)]
+abund_table2r = abund_table2r[,which(colSums(abund_table2r) != 0)]
+abund_table3r = abund_table3r[,which(colSums(abund_table3r) != 0)]
+abund_table4r = abund_table4r[,which(colSums(abund_table4r) != 0)]
+abund_table5r = abund_table5r[,which(colSums(abund_table5r) != 0)]
+abund_table6r = abund_table6r[,which(colSums(abund_table6r) != 0)]
+
+
+
+rc1d=QsNullModels::raup_crick(abund_table1d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc2d=QsNullModels::raup_crick(abund_table2d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc3d=QsNullModels::raup_crick(abund_table3d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc4d=QsNullModels::raup_crick(abund_table4d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc5d=QsNullModels::raup_crick(abund_table5d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc6d=QsNullModels::raup_crick(abund_table6d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+
+rc1r=QsNullModels::raup_crick(abund_table1r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc2r=QsNullModels::raup_crick(abund_table2r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc3r=QsNullModels::raup_crick(abund_table3r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc4r=QsNullModels::raup_crick(abund_table4r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc5r=QsNullModels::raup_crick(abund_table5r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc6r=QsNullModels::raup_crick(abund_table6r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+
+
+rcc1d=subset(melt(as.matrix(rc1d)),value!=0)
+rcc2d=subset(melt(as.matrix(rc2d)),value!=0)
+rcc3d=subset(melt(as.matrix(rc3d)),value!=0)
+rcc4d=subset(melt(as.matrix(rc4d)),value!=0)
+rcc5d=subset(melt(as.matrix(rc5d)),value!=0)
+rcc6d=subset(melt(as.matrix(rc6d)),value!=0)
+
+rcc1r=subset(melt(as.matrix(rc1r)),value!=0)
+rcc2r=subset(melt(as.matrix(rc2r)),value!=0)
+rcc3r=subset(melt(as.matrix(rc3r)),value!=0)
+rcc4r=subset(melt(as.matrix(rc4r)),value!=0)
+rcc5r=subset(melt(as.matrix(rc5r)),value!=0)
+rcc6r=subset(melt(as.matrix(rc6r)),value!=0)
+
+
+rcc1d$factor="P1-dry"
+rcc2d$factor="P2-dry"
+rcc3d$factor="P3-dry"
+rcc4d$factor="P4-dry"
+rcc5d$factor="P5-dry"
+rcc6d$factor="P6-dry"
+
+rcc1r$factor="P1-wet"
+rcc2r$factor="P2-wet"
+rcc3r$factor="P3-wet"
+rcc4r$factor="P4-wet"
+rcc5r$factor="P5-wet"
+rcc6r$factor="P6-wet"
+
+
+rcc_dmp=rbind(rcc1r, rcc2r,rcc3r,rcc4r,rcc5r,rcc6r,
+              rcc1d, rcc2d, rcc3d, rcc4d, rcc5d, rcc6d)
+
+
+summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
+                      conf.interval=.95, .drop=TRUE) {
+  library(plyr)
+  
+  # New version of length which can handle NA's: if na.rm==T, don't count them
+  length2 <- function (x, na.rm=FALSE) {
+    if (na.rm) sum(!is.na(x))
+    else       length(x)
+  }
+  
+  # This does the summary. For each group's data frame, return a vector with
+  # N, mean, and sd
+  datac <- ddply(data, groupvars, .drop=.drop,
+                 .fun = function(xx, col) {
+                   c(N    = length2(xx[[col]], na.rm=na.rm),
+                     mean = mean   (xx[[col]], na.rm=na.rm),
+                     sd   = sd     (xx[[col]], na.rm=na.rm)
+                   )
+                 },
+                 measurevar
+  )
+  
+  # Rename the "mean" column    
+  datac <- rename(datac, c("mean" = measurevar))
+  
+  datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
+  
+  # Confidence interval multiplier for standard error
+  # Calculate t-statistic for confidence interval: 
+  # e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
+  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+  datac$ci <- datac$se * ciMult
+  
+  return(datac)
+}
+
+summary_se3=summarySE(rcc_dmp, measurevar = "value", groupvars = "factor")
+
+# Let's save the summary_se object
+#write.csv(summary_se, "./RC_bact.csv")
+betadiv=rcc_dmp %>% separate(factor, c("Pol", "Season"))
+
+
+colors<-viridis::turbo(6, alpha = 1, begin = 0, end = 1, direction = 1)
+
+strip <- strip_themed(background_x = elem_list_rect(fill = colors))
+
+plot<-ggerrorplot(betadiv, x="Pol", y="value", desc_stat = "mean_se", 
+            color="Season",facet.by = "Pol", size = 1,
+            error.plot = "errorbar",            # Change error plot type
+            add = "mean")+facet_grid2(.~Pol, scales = "free", strip = strip)+
+  geom_hline(yintercept = 0.95, linetype=2)+
+  geom_hline(yintercept = -0.95, linetype=2)+theme_linedraw()+
+  theme(#legend.position="none",
+        #panel.border = element_blank(), 
+        panel.spacing.x = unit(0.3,"line"),
+        axis.line.x = element_line(colour = "black"),
+        axis.line.y = element_line(colour = "black"))+ 
+  stat_compare_means(aes(group = Season), label = "p.signif")+
+  ylab("Incidence-based beta diversity - Raup-Crick metric (±SE)")+
+  theme(axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())+
+  scale_y_continuous(breaks = c(-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1),
+                     sec.axis = sec_axis(~.,
+                                         breaks = c(-0.95,0.95),
+                                         name=" ‘stochastic’ range (−0.95 < βRC < + 0.95)",
+                                         labels = c("Deterministic \n more similar", 
+                                                    "Deterministic \n dissimilar" )))+
+  scale_color_manual(values = c("#FE922AFF","#4490FEFF"),labels=c("Secas", "Lluvias"))+theme_grey()+
+  theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank(),
+        strip.text.x = element_text(size = 14, face = "bold", color="white"),
+        strip.text.y = element_text(size = 16, face = "bold"),
+       axis.title = element_text(size = 14))+ theme(
+                  strip.background.y = element_rect(
+     color="black", fill="black", size=1.5, linetype="solid"),
+     strip.text.y = element_text(colour = "white", face = "bold"))+
+  xlab("Polygon")
+plot
+ggsave("../Plots/null-models-otu-rar.png",width = 8, height = 6, dpi = 300, plot = plot, device = "png")
+```
+
+
+```{r}
+source("../Scripts/raup_crick_abundance.R")
+library(phyloseq)
+library(picante)
+library(ape)
+rc1da=raup_crick_abundance(abund_table1d, plot_names_in_col1 = F, reps = 999,  set_all_species_equal = F)
+rc2da=raup_crick_abundance(abund_table2d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc3da=raup_crick_abundance(abund_table3d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc4da=raup_crick_abundance(abund_table4d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc5da=raup_crick_abundance(abund_table5d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc6da=raup_crick_abundance(abund_table6d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+
+rc1ra=raup_crick_abundance(abund_table1r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc2ra=raup_crick_abundance(abund_table2r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc3ra=raup_crick_abundance(abund_table3r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc4ra=raup_crick_abundance(abund_table4r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc5ra=raup_crick_abundance(abund_table5r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc6ra=raup_crick_abundance(abund_table6r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+
+library(reshape2)
+rcc1da=subset(melt(as.matrix(rc1da)),value!=0)
+rcc2da=subset(melt(as.matrix(rc2da)),value!=0)
+rcc3da=subset(melt(as.matrix(rc3da)),value!=0)
+rcc4da=subset(melt(as.matrix(rc4da)),value!=0)
+rcc5da=subset(melt(as.matrix(rc5da)),value!=0)
+rcc6da=subset(melt(as.matrix(rc6da)),value!=0)
+
+rcc1ra=subset(melt(as.matrix(rc1ra)),value!=0)
+rcc2ra=subset(melt(as.matrix(rc2ra)),value!=0)
+rcc3ra=subset(melt(as.matrix(rc3ra)),value!=0)
+rcc4ra=subset(melt(as.matrix(rc4ra)),value!=0)
+rcc5ra=subset(melt(as.matrix(rc5ra)),value!=0)
+rcc6ra=subset(melt(as.matrix(rc6ra)),value!=0)
+
+rcc1da$factor="P1-dry"
+rcc2da$factor="P2-dry"
+rcc3da$factor="P3-dry"
+rcc4da$factor="P4-dry"
+rcc5da$factor="P5-dry"
+rcc6da$factor="P6-dry"
+
+rcc1ra$factor="P1-wet"
+rcc2ra$factor="P2-wet"
+rcc3ra$factor="P3-wet"
+rcc4ra$factor="P4-wet"
+rcc5ra$factor="P5-wet"
+rcc6ra$factor="P6-wet"
+rcc_dmpa=rbind(rcc1ra, rcc2ra,rcc3ra,rcc4ra,rcc5ra,rcc6ra,
+              rcc1da, rcc2da, rcc3da, rcc4da, rcc5da, rcc6da)
+
+summary_se4=summarySE(rcc_dmpa, measurevar = "value", groupvars = "factor")
+
+library(tidyverse)
+library(ggpubr)
+# Let's save the summary_se object
+#write.csv(summary_se, "./RC_bact.csv")
+betadiva=rcc_dmpa %>% separate(factor, c("Pol", "Season"))
+a<-ggerrorplot(betadiva, x="Pol", y="value", desc_stat = "mean_se", 
+            color="Season",facet.by = "Pol", size = 1,
+            error.plot = "errorbar",            # Change error plot type
+            add = "mean")+facet_grid2(.~Pol, scales = "free", strip = strip)+
+  geom_hline(yintercept = 0.95, linetype=2)+
+  geom_hline(yintercept = -0.95, linetype=2)+theme_linedraw()+
+  theme(#legend.position="none",
+    #panel.border = element_blank(), 
+    panel.spacing.x = unit(0.3,"line"),
+    axis.line.x = element_line(colour = "black"),
+    axis.line.y = element_line(colour = "black"))+ 
+  stat_compare_means(aes(group = Season), label = "p.signif")+
+  ylab("Abundance-based (Raup-Crick) beta-diversity with Bray-Curtis dissimilarity (±SE)")+
+  theme(axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())+
+  scale_y_continuous(breaks = c(-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1),
+                     sec.axis = sec_axis(~.,
+                                         breaks = c(-0.95,0.95),
+                                         name=" 'Drift range (−0.95 < βRC < + 0.95)'",
+                                         labels = c("Homogenizing dispersal", 
+                                                    "Dispersal limitation or\n historical contigency" )))+
+  scale_color_manual(values = c("#FE922AFF","#4490FEFF"),labels=c("Secas", "Lluvias"))+theme_grey()+
+  theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank(),
+        strip.text.x = element_text(size = 14, face = "bold", color="white"),
+        strip.text.y = element_text(size = 16, face = "bold"),
+       axis.title = element_text(size = 14))+ theme(
+                  strip.background.y = element_rect(
+     color="black", fill="black", size=1.5, linetype="solid"),
+     strip.text.y = element_text(colour = "white", face = "bold"))+
+    xlab("Polygon")
+
+a
+ggsave("Plot/null-abund-otus.png",width = 8, height = 5, dpi = 300, plot = a, device = "png")
+
+
+
+```
+

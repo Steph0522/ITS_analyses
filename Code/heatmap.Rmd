@@ -1,0 +1,429 @@
+---
+title: "heatmap"
+output: html_document
+date: "2024-06-03"
+---
+
+- Load data and packages and format
+
+```{r}
+library(tidyverse)
+library(qiime2R)
+library(ComplexHeatmap)
+library(circlize)
+library(viridis)
+library(ggh4x)
+
+#tab <- read_qza("../Data/table_SMOQ.qza")$data %>% as.data.frame() %>% 
+ #rownames_to_column(var = "Feature.ID") 
+#taxa<- qiime2R::read_qza("../Data/taxonomy_SMOQ_ver10.qza")$data %>% as.data.frame()
+
+tab <- read_qza("../Data/table_SMDR.qza")$data %>% as.data.frame() %>% 
+rownames_to_column(var = "Feature.ID") 
+taxa<- qiime2R::read_qza("../Data/taxonomy_SMDR.qza")$data %>% as.data.frame()
+
+
+tab_tax<- tab %>% inner_join(taxa)
+
+tab_taxa<- tab_tax %>% dplyr::select(OTUID=Feature.ID, `121D`:`221D`, taxonomy=Taxon)
+#tab_taxa<- tab_tax %>% dplyr::select(OTUID=Feature.ID, `111D`:`623R`, taxonomy=Taxon)
+
+
+#guilds
+
+#guild1<- read.delim("../Data/otus/table_otus.guilds_matched.txt", check.names = F) %>% 
+ # filter(!"Trophic Mode"=="na") %>%
+  #mutate(Guild = str_replace_all(Guild, "\\|", ""))
+
+guild1<- read.delim("../Data/asvs/table_asvs.guilds_matched.txt", check.names = F) %>% 
+ filter(!"Trophic Mode"=="na") %>%
+mutate(Guild = str_replace_all(Guild, "\\|", ""))
+
+
+
+guild<- guild1 %>% group_by(Genus=Taxon, Guild) %>% dplyr::count()
+trophic<- guild1 %>% group_by(Genus=Taxon, `Trophic Mode`) %>% dplyr::count()
+
+
+relabunda<- function(x){(as.data.frame(t(t(x)/colSums(x)))*100)}
+
+metadata<- read.delim("../Data/its_map.txt")
+
+
+vector_order<- c("111D" , "112D", "113D" ,"121D", "122D" ,"123D", "111R" ,"112R", "113R", "121R", "122R" ,"123R",
+                 "211D" ,"212D" ,"213D" ,"221D" ,"222D" ,"223D", "211R" ,"212R" ,"213R", "221R", "222R" ,"223R",
+                 "311D" ,"312D" ,"313D" ,"321D", "323D" ,"322D","311R" ,"312R" ,"313R" ,"321R", "322R" ,"323R" ,
+                 "411D" ,"412D" ,"413D" ,"421D" ,"422D" ,"423D", "411R", "412R" ,"413R" ,"421R" ,"422R" ,"423R",
+                 "511D" ,"512D" ,"513D" ,"521D" ,"522D", "523D", "511R", "512R" ,"513R" ,"521R", "522R" ,"523R",
+                 "611D" ,"612D" ,"613D", "621D" ,"622D", "623D",  "611R", "612R","613R", "621R" ,"622R", "623R")
+
+#ordering
+
+taxones_color<- read_csv("../Data/taxones_color.csv") %>% dplyr::rename(Genus=Taxon)
+
+table_genus <- tab_taxa %>%  separate(taxonomy,
+                                      c(
+                                        "Kingdom",
+                                        "Phylum",
+                                        "Order",
+                                        "Class",
+                                        "Family",
+                                        "Genus",
+                                        "Species"
+                                      ),
+                                      sep = ";") %>% mutate_at(c("Genus"), ~ str_replace(., "g__", "")) %>%
+  dplyr::mutate(Genus = stringr::str_trim(Genus, side = "both")) %>% mutate_if(is.character, ~
+                                                                                 replace_na(., "Unassigned")) %>% group_by(Genus) %>% summarise_if(is.numeric, sum) %>%
+  column_to_rownames(var = "Genus") %>% t() %>% as.data.frame() %>%
+  rownames_to_column(var = "SampleID") %>%
+  inner_join(metadata) %>% group_by(Poligono, Season) %>%
+  summarise_if(is.numeric, sum) %>%
+  unite("ids", Poligono:Season, sep = ".") %>% column_to_rownames(var = "ids") %>%
+  t() %>% as.data.frame() %>% mutate(all = rowSums(.)) %>% dplyr::arrange(-all) %>% relabunda(.) %>%
+  as.data.frame() %>%  rownames_to_column(var = "Genus") %>% filter(!Genus ==
+                                                                      "unidentified" ,
+                                                                    !Genus == "Unassigned") %>%
+  filter(!grepl('Incertae_sedis', Genus)) %>% slice(c(1:50))  %>% pivot_longer(.,
+                                                                               cols = -Genus,
+                                                                               names_to = "SampleID",
+                                                                               values_to = "relab") %>% filter(!SampleID ==
+                                                                                                                 "all")
+cols <-
+  table_genus %>% inner_join(taxones_color) %>% arrange(Genus)
+col <- as.character(cols$color)
+names(col) <- as.character(cols$Genus)
+
+barplot_genus<- table_genus %>% dplyr::select(
+    Genus, SampleID, relab) %>% pivot_wider(
+      names_from = Genus, values_from = relab) %>% column_to_rownames(
+        var = "SampleID") %>% t() %>% as.data.frame()
+
+
+
+data_fungi_order=barplot_genus%>%
+rownames_to_column(var="Genus")
+
+
+merge_data<- data_fungi_order %>% mutate(Genus=case_when(
+        Genus=="Leptosphaeria maculans species complex" ~ "Leptosphaeria", 
+        TRUE ~ as.character(Genus)))%>% column_to_rownames(
+          var = "Genus") %>% mutate(proms=rowMeans(.)) %>% dplyr::arrange(-proms) %>% slice(
+            1:80)%>% dplyr::select(-proms) %>% mutate_all(., funs(R = case_when(
+              . <= 0.001 ~ 0,
+              . >  0.001 & .  <= 0.005 ~ 1,
+              . >  0.005 & .  <= 0.01 ~ 2,
+              . >  0.01 & .  <= 0.10 ~ 3,
+              . >  0.10 & .  <= 0.20 ~ 4,
+              . >  0.20 & .  <= 1.00 ~ 5,
+              . >  1.00 & .  <= 2.00 ~ 6,
+              . >  2.00 & .  <= 5.00 ~ 7,
+              . >  5.00 & .  <= 10.00 ~ 8,
+              . >  10.00 & .  <= 25.00 ~ 9,
+              . >  25.00 & .  <= 50.00 ~ 10,
+              . >  50.00 & .  <= 75.00 ~ 11,
+              . >  75.00 ~ 12))) %>%select_at(
+                vars(contains("_R"))) %>% select_all(~str_replace(., "_R", ""))
+```
+
+- Constructing data and annotations for heatmap
+
+```{r}
+#annotatio seccion y origen (columnas)
+annotation_columns<- data.frame(id=colnames(merge_data)) 
+rownames(annotation_columns) <- colnames(heatmap)
+
+#set.seed(123)
+#split = rep(1:6, each = 12)
+split= c(rep("1D", 1),rep("1R", 1),
+         rep("2D", 1),rep("2R", 1),
+         rep("3D", 1),rep("3R", 1),
+         rep("4D", 1),rep("4R", 1),
+         rep("5D", 1),rep("5R", 1),
+         rep("6D", 1),rep("6R", 1)         )
+
+split=c("P1", "P2", "P3", "P4", "P5", "P6")
+
+Pol<- c(1,1,
+          2,2,
+          3,3,
+          4,4,
+          5,5,
+          6,6)
+pal<- viridis(6, option = "H")
+ha = HeatmapAnnotation("Pol" = anno_block(gp = gpar(
+  fill = pal), 
+  labels = c("P1", "P2", "P3", "P4","P5",  "P6" ), 
+  labels_gp = gpar(col = "white", fontsize = 11, fontface= "bold")))
+
+
+
+
+cols_ho<- list("Season" = c("Dry"="#FE922AFF","Rainy"="#4490FEFF"))
+
+ho = HeatmapAnnotation("Season" = c(rep("Dry", 1), rep("Rainy", "1"),
+                                    rep("Dry", 1), rep("Rainy", "1"),
+                                    rep("Dry", 1), rep("Rainy", "1"),
+                                    rep("Dry", 1), rep("Rainy", "1"),
+                                    rep("Dry", 1), rep("Rainy", "1"),
+                                    rep("Dry", 1), rep("Rainy", "1")),
+                       which = "col", col = cols_ho,
+                       annotation_name_gp = gpar(fontsize=8,
+                                                 fontface="bold"),
+                       show_legend = F, gp = gpar(
+                         col = "white", fontize=12), 
+                       simple_anno_size = unit(0.25, "cm"),
+                       show_annotation_name = T)
+#annotatio row (filas)
+guilds <- guild %>% 
+  mutate(Guilds = case_when(
+    Guild == "Dung Saprotroph-Undefined Saprotroph-Wood Saprotroph" ~ "Dung Sap.-Undef Sap.-Wood Sap.",
+    Guild == "Ectomycorrhizal-Fungal Parasite" ~ "Ectomycorrhizal-Fung.Parasit",
+    Guild == "Animal Pathogen-Endophyte-Endosymbiont-Epiphyte-Soil Saprotroph-Undefined Saprotroph" ~ "Animal P-Endoph/symb-Undef. Sap.",
+     Guild == "Animal Pathogen-Endophyte-Fungal Parasite-Undefined Saprotroph" ~ "Animal P-Endoph/symb-Undef. Sap.",
+    Guild == "Animal Pathogen-Endophyte-Fungal Parasite-Plant Pathogen-Wood Saprotroph" ~ "Animal/Plant P-Endoph-Fungal Para-Wood. Sap.",
+    Guild == "Bryophyte Parasite-Dung Saprotroph-Ectomycorrhizal-Fungal Parasite-Leaf Saprotroph-Plant Parasite-Undefined Saprotroph-Wood Saprotroph" ~ "Bryophyte Para-Dung Sap.-Ecto-Para-Undef. Sap.",
+    Guild== "Animal Parasite-Dung Saprotroph-Endophyte-Fungal Parasite-Plant Pathogen-Undefined Saprotroph-Wood Saprotroph"~ "Animal Par-Pathogen-Undef. Sap", 
+    Guild == "Animal Parasite-Animal Pathogen-Undefined Saprotroph" ~ "Animal Par-Pathogen-Undef. Sap",
+    Guild=="Animal Parasite-Animal Pathogen-Endophyte-Plant Saprotroph-Undefined Saprotroph" ~ "Animal Par-Pathogen-Undef. Sap",
+    Guild == "Dung Saprotroph-Ectomycorrhizal-Soil Saprotroph-Wood Saprotroph" ~ "Dung Sap.-Ectomycorrhizal-Soil Sap.-Wood Sap.",
+    Guild=="Ectomycorrhizal-Plant Saprotroph-Wood Saprotroph" ~"Ectomycorrhizal-Undef. Sap.", 
+    Guild == "Endophyte-Plant Pathogen-Wood Saprotroph" ~ "Endophyte-Pathogen-Saprotroph",
+    Guild=="Endophyte-Plant Saprotroph-Undefined Saprotroph" ~ "Endophyte-Pathogen-Saprotroph",
+    Guild == "Animal Pathogen-Endophyte-Epiphyte-Fungal Parasite-Plant Pathogen-Wood Saprotroph" ~ "Animal-Plant P-Endophyte-Saprotroph",
+    Guild == "Endophyte-Litter Saprotroph-Soil Saprotroph-Undefined Saprotroph" ~ "Endophyte-Undefined Sap.",
+    Guild=="Endophyte-Ericoid Mycorrhizal-Undefined Saprotroph" ~ "Endophyte-Undefined Sap.",
+    Guild == "Animal Endosymbiont-Animal Pathogen-Plant Pathogen-Undefined Saprotroph" ~ "Animal-Plant endosymb-P-Undef. Sap.",
+    Guild == "Endophyte-Plant Pathogen-Undefined Saprotroph" ~ "Endophyte-Plant Pathogen-Undef. Sap.",
+    Guild=="Ectomycorrhizal-Plant Saprotroph"~"Ectomycorrhizal-Undef. Sap.", 
+    Guild=="Ectomycorrhizal-Endophyte-Plant Pathogen-Plant Saprotroph" ~ "Ectomycorrhizal-Undef. Sap.",
+    Guild == "Ectomycorrhizal-Undefined Saprotroph" ~ "Ectomycorrhizal-Undef. Sap.",
+    Guild== "Ectomycorrhizal-Ericoid Mycorrhizal-Plant Pathogen-Plant Saprotroph-Undefined Saprotroph-Wood Saprotroph"  ~ "Ectomycorrhizal-Undef. Sap.",
+    Guild == "Animal Pathogen-Fungal Parasite-Undefined Saprotroph" ~ "Animal P-Fungal Parasite-Undef. Sap.",
+    Guild == "Animal Pathogen-Endophyte-Plant Pathogen-Wood Saprotroph" ~ "Animal P-Fungal Parasite-Undef. Sap.",
+    Guild == "Fungal Parasite-Plant Pathogen-Plant Saprotroph" ~ "Fungal Parasite-Plant Path-Plant Sap.",
+    Guild == "Leaf Saprotroph-Plant Pathogen-Undefined Saprotroph-Wood Saprotroph" ~ "Leaf Sap.-Plant P/Undef Sap.",
+    Guild == "Dung Saprotroph-Ectomycorrhizal-Litter Saprotroph-Undefined Saprotroph" ~ "Dung Sap.-Ectomycorrhizal-Soil Sap.-Wood Sap.",
+    Guild == "Endophyte-Epiphyte-Fungal Parasite-Insect Parasite" ~ "Endophyte-Epiphyte-Fungal/Insect Para",
+    Guild == "Animal Pathogen-Endophyte-Plant Pathogen-Soil Saprotroph-Wood Saprotroph" ~ "Animal Pathogen-Endoph-Plant P-Soil/Wood Sap",
+    Guild == "Ectomycorrhizal-Orchid Mycorrhizal-Root Associated Biotroph" ~ "Ectomycorrhizal-Mycorrhizal-Biotroph",
+    Guild == "Clavicipitaceous Endophyte-Plant Pathogen" ~ "Clavicipitaceous Endophyte-Plant Pat.",
+    Guild=="Plant Pathogen-Plant Saprotroph-Undefined Saprotroph-Wood Saprotroph" ~ "Plant Pathogen-Undefined Saprotroph",
+    Guild=="Animal Pathogen-Dung Saprotroph"~"Animal Pathogen-Soil Saprotroph",
+    Guild=="Animal Pathogen-Dung Saprotroph-Endophyte-Epiphyte-Plant Pathogen-Plant Saprotroph-Wood Saprotroph"~"Animal Pathogen-Soil Saprotroph",
+    TRUE ~ as.character(Guild)
+  ))
+
+
+
+cols_guild <- list('Guilds' = c(
+  "Unassigned"= "#85929e",
+  "Animal Pathogen-Endophyte-Plant Pathogen-Soil Saprotroph-Wood Saprotroph"="#D95F02",
+  "Animal Pathogen-Endoph-Plant P-Soil/Wood Sap"="#D95F02",
+  "Animal Par-Pathogen-Undef. Sap"="#FF3333",
+  "Animal Pathogen-Endophyte-Epiphyte-Fungal Parasite-Plant Pathogen-Wood Saprotroph"="#d658c3",
+  "Animal Pathogen-Soil Saprotroph"="#F08080",
+  "Animal Endosymbiont-Animal Pathogen-Plant Pathogen-Undefined Saprotrop."="#ca7822",
+  "Animal Pathogen"="#ba4a00",
+  "Animal Pathogen-Endophyte-Endosymbiont-Epiphyte-Soil Saprotroph-Undefined Saprotroph"="#C70039",
+  "Animal P-Endoph/symb-Undef. Sap."="#C70039",
+  "Animal Pathogen-Undefined Saprotroph"="#c70051",
+  "Animal/Plant P-Endoph-Fungal Para-Wood. Sap."="#DE3163",
+  "Bryophyte Para-Dung Sap.-Ecto-Para-Undef. Sap."="#ae1100",
+  "Plant Pathogen"="#E7298A",
+  "Fungal Parasite"="#666666", #no sale
+  "Animal-Plant P-Endophyte-Saprotroph"="#ff452d",
+  "Animal-Plant endosymb-P-Undef. Sap."="#f77c00",
+  "Animal Pathogen-Fungal Parasite-Undefined Saprotroph"="#900C3F",
+  "Animal P-Fungal Parasite-Undef. Sap."="#b71400",
+  "Fungal Parasite-Plant Pathogen-Plant Saprotroph"="#e22b0f",
+  "Fungal Parasite-Plant Path-Plant Sap."="#e22b0f",
+  "Plant Pathogen-Undefined Saprotroph"="#b65169",
+  
+  
+  "Arbuscular Mycorrhizal"="#008000",
+  "Ectomycorrhizal-Orchid Mycorrhizal-Root Associated Biotroph"="#b4ff68",
+  "Ectomycorrhizal-Mycorrhizal-Biotroph"="#b4ff68",
+  "Ectomycorrhizal" = "#7FC97F",
+  "Ectomycorrhizal-Fungal Parasite"="#58d68d",
+  "Ectomycorrhizal-Fung.Parasit"="#58d68d",
+  "Ectomycorrhizal-Undefined Saprotroph"="#edf2a3",
+  "Ectomycorrhizal-Undef. Sap."="#edf2a3",
+  "Endophyte"="#00FFFF",
+  "Endophyte-Plant Pathogen"="#117a65",
+  "Epiphyte"="#02f0a5",
+  "Ericoid Mycorrhizal"="#a2ab16",
+  "Lichenized"="#DAF7A6",
+  "Ectomycorrhizal-Orchid"="#0000FF", #no sale
+  "Endophyte-Plant Pathogen-Undefined Saprotroph" ="#00FF00",
+  "Endophyte-Plant Pathogen-Undef. Sap." ="#7dcea0",
+  "Endophyte-Pathogen-Saprotroph"="#0b5345",
+  "Endophyte-Plant Pathogen-Wood Saprotroph"="#00FF00",
+  "Endophyte-Litter Saprotroph-Soil Saprotroph-Undefined Saprotroph"="#73c6b6",
+  "Endophyte-Undefined Sap."="#008080",
+  "Endophyte-Insect Pathogen"="#00FFFF",
+  "Endophyte-Epiphyte-Fungal/Insect Para" ="#55d9d2",
+  "Clavicipitaceous Endophyte-Plant Pat."="#5e6326",
+  "Ectomycorrhizal-Wood Saprotroph" ="#9ba538",
+  
+  "Soil Saprotroph-Undefined Saprotroph"="#73504c",
+  "Dung Sap.-Ectomycorrhizal-Soil Sap.-Wood Sap."="#c09b97",
+  "Undefined Saprotroph-Undefined Symbiotroph"="#8a7726",
+  "Undefined Saprotroph-Wood Saprotroph"="#BF8A7F", 
+  "Dung Saprotroph"="#FDC086",
+  "Soil Sparotroph"="#851d01",
+  "Undefined Saprotroph"="#7d6608",
+  "Wood Saprotroph"="#E6AB02",
+  "Plant Pathogen-Wood Saprotroph"="#5b1a34",
+  "Plant Saprotroph-Undefined Saprotroph"= "#501407",
+  "Dung Saprotroph-Wood Saprotroph"="#7d5c48",
+  "Dung Sap.-Undef Sap.-Wood Sap."="#FDC086",
+  "Dung Saprotroph-Undefined Saprotroph"="#d79e98",
+  "Leaf Sap.-Plant P/Undef Sap."="#6f4642",
+  "Dung Saprotroph-Undefined Saprotroph-Wood Saprotroph"="#FDC086" 
+))
+
+
+cols_tro <- list('Trophic' = c(
+  "Pathotroph"=	"#D95F02",
+  "Pathotroph-Saprotroph"=	"#581845",
+  "Pathotroph-Symbiotroph"="#F08080",
+  "Saprotroph"=	"#851d01",
+  "Saprotroph-Symbiotroph"=	"#7d5c48",
+  "Symbiotroph"=	"#008000",
+  "Unassigned"= "#85929e",
+  "Pathotroph-Saprotroph-Symbiotroph"=	"#C70039"))
+
+
+table_phylum <- tab_taxa %>%  separate(
+  taxonomy, c("Kingdom","Phylum","Order","Class","Family","Genus","Species"), sep = ";" ) %>% mutate_at(
+    c("Phylum"), ~str_replace(., "p__", "")  )%>% mutate_at(
+      c("Genus"), ~str_replace(., "g__", ""))%>% group_by(Genus, Phylum) %>% dplyr::count()
+
+
+
+
+annotation_rows<- merge_data %>% rownames_to_column(
+  var = "Genus") %>% left_join(
+    guilds) %>% left_join(table_phylum, by = "Genus") %>% dplyr::select_if(
+      is.character) %>% replace(
+        is.na(.), "Unassigned") %>% left_join(trophic) %>% column_to_rownames(
+          var = "Genus") %>% dplyr::rename(Trophic=`Trophic Mode`)
+
+cols_phy<-list("Phylum"=c(
+  "Basidiomycota" ="#133337",
+  "Ascomycota"="#FFFF00"  ,
+  "Mortierellomycota"="#ffa500",
+  "Mucoromycota"="#FF00FF"))
+
+annphyl= HeatmapAnnotation("Phylum" = annotation_rows$Phylum, 
+                           which = "row", col = cols_phy,
+                           show_legend = T,   
+                           show_annotation_name = T,
+                           annotation_name_gp =gpar(
+                             fontsize = 7, fontface="bold"),
+                           annotation_legend_param = list(
+                             title_gp = gpar(fontsize = 7, 
+                                             fontface="bold"),
+                             labels_gp = gpar(fontsize = 7),
+                             direction ="horizontal",
+                             grid_width = unit(0.3, "cm"),
+                             grid_height = unit(0.1, "cm")),
+                           
+                           simple_anno_size = unit(0.3, "cm"),
+                           gp = gpar(col = "white"))
+
+
+annguild = HeatmapAnnotation("Guilds" = annotation_rows$Guilds, 
+                             which = "row", col = cols_guild,
+                             show_legend = T,   
+                             show_annotation_name = T,
+                             annotation_name_gp =gpar(
+                               fontsize = 7, fontface="bold"),
+                             annotation_legend_param = list(
+                               title_gp = gpar(fontsize = 7, 
+                                               fontface="bold"),
+                               labels_gp = gpar(fontsize = 7),
+                               direction ="horizontal",
+                               grid_width = unit(0.45, "cm"),
+                               grid_height = unit(0.1, "cm")),
+                             
+                             simple_anno_size = unit(0.3, "cm"),
+                             gp = gpar(col = "white"))
+
+anntro = HeatmapAnnotation("Trophic" = annotation_rows$Trophic, 
+                           which = "row", col = cols_tro,
+                           show_legend = T,   
+                           show_annotation_name = T,
+                           annotation_name_gp =gpar(
+                             fontsize = 7,  fontface="bold"),
+                           annotation_legend_param = list(
+                             title_gp = gpar(fontsize = 7, 
+                                             fontface="bold"),
+                             labels_gp = gpar(fontsize =7),
+                             direction ="horizontal",
+                             grid_width = unit(0.45, "cm"),
+                             grid_height = unit(0.1, "cm")),
+                           simple_anno_size = unit(0.3, "cm"),
+                           gp = gpar(col = "white"))
+
+my_palette <- viridis::viridis(n = 12, option = "B", direction = -1)
+
+
+
+heats<-ComplexHeatmap::Heatmap(
+  merge_data,
+  col = my_palette,
+  row_dend_width = unit(0.4, "cm"),
+ width = ncol(merge_data)*unit(6, "mm"), 
+ #height = nrow(merge_data)*unit(2.4, "mm"),
+  heatmap_legend_param = list(direction = "horizontal",
+                              title = "Relative abund(%)",
+                              grid_height = unit(0.2, "cm"),
+                              legend_height = unit(1, "cm"),
+                              labels_gp = gpar(fontsize = 7),
+                              title_gp = gpar(fontsize = 6, 
+                                              fontface="bold"),
+                              at = c(0,1,2,3,5,8,10, 50,100),
+                              break_dist = 3),
+  rect_gp = gpar(col = "white"), 
+  cluster_columns = F, cluster_rows = F,
+  show_heatmap_legend = T, top_annotation = c(ha,ho),
+  right_annotation = c(anntro, annguild, annphyl),
+  #column_order = sort(colnames(merge_data)),
+ column_split = c(1,1,2,2,3,3,4,4,5,5,6,6) ,
+ column_title = NULL,
+  show_column_names = F,
+  row_names_gp = gpar(fontsize=8, fontface="italic"),
+  column_title_gp = gpar(
+    fill = c("#800000" ,"#808000" ,"#008000", "#D35400", "#2E4053" )))
+
+heats
+
+library(viridis)
+
+
+lgd1 = Legend(at =  c("Dry", "Rainy"), 
+              title = "Season", nrow = 1,
+              title_position = "leftcenter",
+              legend_gp = gpar(fill = cols_ho$Season),
+              labels_gp = gpar(fontsize = 8),
+              title_gp = gpar(fontsize = 9, fontface="bold"))
+
+
+draw(heats, heatmap_legend_side = "right",
+     annotation_legend_side = "top", 
+     merge_legend=F,
+     annotation_legend_list = list(lgd1))
+
+
+heatm<-grid.grabExpr(draw(heats, heatmap_legend_side = "right",
+                          annotation_legend_side = "top", 
+                          merge_legend=F,
+                          annotation_legend_list = list(lgd1)))
+
+heatm
+ggsave('../Plots/heatmap_50_otus_10.png', width =7, height = 8, dpi = 300, plot=heatm)
+
+
+```
+

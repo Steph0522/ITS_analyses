@@ -278,6 +278,13 @@ subplot(plot_jac[[3]]+theme(legend.position = "none", title = element_text(size 
 subplot(plot_jac[[4]]+theme(legend.position = "none", title = element_text(size = 8))+ggtitle("OJIS"), 
         plot_turn[[4]]+theme(legend.position = "none"),
         plot_nes[[4]]+theme(legend.position = "none"))
+plot<- cowplot::plot_grid(plot_jac[[4]]+ylab("DIM1")+xlab("DIM2")+theme(legend.position = "none", title = element_text(size = 8))+theme(aspect.ratio =8/10), 
+        plot_turn[[4]]+theme(legend.position = "none")+theme(aspect.ratio =8/10),
+        plot_nes[[4]]+theme(legend.position = "none")+theme(aspect.ratio =8/10), nrow = 1, labels = c("a) beta", "b) turnover", "c) nestedness"))
+
+plot
+
+ggsave("pcoas.png",width =10, height =3.5, dpi = 300, plot = plot, device = "png")
 
 subplot(plot_jac[[5]]+theme(legend.position = "none", title = element_text(size = 8))+ggtitle("OISS"), 
         plot_turn[[5]]+theme(legend.position = "none"),

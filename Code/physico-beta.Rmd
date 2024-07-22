@@ -1,0 +1,177 @@
+---
+title: "Beta Physico-chemicals"
+output: html_document
+date: "2024-05-16"
+---
+
+- Loading packages and data    
+```{r, message=FALSE, warning=FALSE}
+library(reshape2)
+library(picante)
+library(readxl)
+library(tidyverse)
+library(pgirmess)
+library(car)
+library(ggplot2)
+library(ggpubr)
+library(ggvegan)
+library(ggordiplots)
+source("../Scripts/gg_ordiplots2.R")
+
+
+dry<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_secas_all") %>% mutate(Season="Dry")
+wet<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_lluvias_all") %>% mutate(Season="Wet")
+
+# select characteristics in both datasets
+drys<- dry %>% dplyr::select( Poligono,Sitio,Transecto,pH,MO,N,P,Season)
+wets<- wet %>% dplyr::select(Poligono,Sitio,Transecto,pH,MO,N,P,Season)
+
+env_season<- rbind(drys,wets) %>% mutate(sea=c(rep("D",36), rep("R",36))) %>% unite("SampleID", c("Poligono", "Sitio", "Transecto", "sea"),remove = F, sep = "")
+
+env_season$Poligono<- factor(env_season$Poligono, levels = c(1,2,3,4,5,6),
+                             labels = c("P1", "P2", "P3", "P4", "P5", "P6"))
+env_season$Season<- factor(env_season$Season)
+
+env_season<-env_season %>%  unite("interact", c("Poligono", "Season"), remove = F)
+
+df <-env_season  %>% column_to_rownames(var="SampleID") %>% dplyr::select(pH,MO,N,P)
+
+df$Poligono<-NA
+df$Poligono<-env_season$Poligono
+df$Season<-env_season$Season
+
+```
+
+- Beta physcochemicals
+
+```{r}
+library(vegan)
+library(qiime2R)
+spp.ITS=read_qza("../Data/table_SMOQ.qza")$data
+spp.ITS2=read_qza("../Data/table_SMDR.qza")$data
+
+env.ITS=env_season
+spp.ITS=data.frame(t(spp.ITS), check.names = F)
+spp.ITS2=data.frame(t(spp.ITS2), check.names = F)
+
+mm=spp.ITS %>% rownames_to_column(var = "SampleID") %>% inner_join(env.ITS) %>% column_to_rownames(var = "SampleID")
+mm=na.omit(mm)
+
+mm2=spp.ITS2 %>% rownames_to_column(var = "SampleID") %>% inner_join(env.ITS) %>% column_to_rownames(var = "SampleID")
+mm2=na.omit(mm2)
+
+
+env.ITS=mm[,14536:14539]
+spp.ITS=mm[,1:14531]
+
+env.ITS2=mm2[,7241:7244]
+spp.ITS2=mm2[,1:7236]
+
+
+
+#select variables that did not show collinearity
+spp.ITS_hell=decostand(spp.ITS, "hell") # Hellinger transformation
+env.ITS_st=data.frame(scale(env.ITS, scale=T, center=F)) # standardize env. data
+
+spp.ITS_hell2=decostand(spp.ITS2, "hell") # Hellinger transformation
+env.ITS_st2=data.frame(scale(env.ITS2, scale=T, center=F)) # standardize env. data
+
+
+#quartz.save("RDA0_16S.pdf", type="pdf")
+vares_cca1 <- cca(spp.ITS_hell ~., data=env.ITS_st)
+envs1<-envfit(vares_cca1 ~ ., data=env.ITS_st)$vectors[["pvals"]]%>% as.data.frame() %>% dplyr::select("OTUS"=".")
+
+vares_cca2 <- cca(spp.ITS_hell2 ~., data=env.ITS_st2)
+envs2<-envfit(vares_cca2 ~ ., data=env.ITS_st2)$vectors[["pvals"]]%>% as.data.frame() %>% dplyr::select("ASVS"=".")
+
+```
+
+```{r}
+map<- read.delim("../Data/its_map.txt")
+fdat <- ggplot2::fortify(vares_cca1)
+map1<- map[match(rownames(spp.ITS_hell), map$SampleID),]
+map1_type<- map1 %>% dplyr::select(Poligono, Season) %>% group_by(Poligono, Season) %>% count()
+library(vegan)
+
+y<-gg_ordiplot2(vares_cca1, groups = map1$Poligono, groups2 = map1$Season,ellipse =  F, 
+                            spiders = T, hull = F, plot = F, scaling = 3)
+z <- y$plot
+a1<-z+theme_linedraw()+
+  geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_linedraw()+
+  scale_color_viridis_d(option ="turbo" )+#color of points +
+    ggrepel::geom_label_repel(data = fdat %>% filter(
+  score=="biplot") %>%  
+      mutate(CCA1=CCA1*1.9, CCA2=CCA2*1.9) ,
+    aes(x=CCA1, y=CCA2, label= label),
+    color="red", segment.color = NA, size=4.5)+
+  theme_linedraw() +
+  theme(axis.text = element_text(colour = "black", size = 5),
+        axis.title = element_text(colour = "black", size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10), 
+        legend.position = "right", 
+        legend.box = "vertical",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_label(
+    data = y$df_mean.ord,
+    aes(x = x, y = y, label=Group), 
+    label.padding = unit(0.15, "lines"),label.size = 0.5,
+    size=5,   check_overlap = TRUE
+  )+guides(
+    color=guide_legend(title="Sites"))+ylab("CCA2")+xlab("CCA1")+
+  theme(axis.text = element_text(size = 12))
+a1  
+```
+
+```{r}
+map<- read.delim("../Data/its_map.txt")
+fdat2 <- ggplot2::fortify(vares_cca1)
+map2<- map[match(rownames(spp.ITS_hell2), map$SampleID),]
+map2_type<- map1 %>% dplyr::select(Poligono, Season) %>% group_by(Poligono, Season) %>% count()
+library(vegan)
+
+y2<-gg_ordiplot2(vares_cca2, groups = map2$Poligono, groups2 = map2$Season,ellipse =  F, 
+                            spiders = T, hull = F, plot = F, scaling = 3)
+z2 <- y2$plot
+a2<-z2+theme_linedraw()+
+  geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_linedraw()+
+  scale_color_viridis_d(option ="turbo" )+#color of points +
+    ggrepel::geom_label_repel(data = fdat2 %>% filter(
+  score=="biplot") %>%  
+      mutate(CCA1=CCA1*1.9, CCA2=CCA2*1.9) ,
+    aes(x=CCA1, y=CCA2, label= label),
+    color="red", segment.color = NA, size=4.5)+
+  theme_linedraw() +
+  theme(axis.text = element_text(colour = "black", size = 5),
+        axis.title = element_text(colour = "black", size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10), 
+        legend.position = "right", 
+        legend.box = "vertical",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_label(
+    data = y2$df_mean.ord,
+    aes(x = x, y = y, label=Group), 
+    label.padding = unit(0.15, "lines"),label.size = 0.5,
+    size=5,   check_overlap = TRUE
+  )+guides(
+    color=guide_legend(title="Sites"))+ylab("CCA2")+xlab("CCA1")+
+  theme(axis.text = element_text(size = 12))
+a2  
+
+ggsave('../Plots/fisico-beta-otus.png', width =8, height = 6, dpi = 300, plot =a1)
+ggsave('../Plots/fisico-beta-asvs.png', width =8, height = 6, dpi = 300, plot =a2)
+
+
+```
+

@@ -1,0 +1,116 @@
+---
+title: "betapart"
+output: html_document
+date: "2024-07-04"
+---
+
+```{r}
+#beta
+library(tidyverse)
+library(betapart)
+library(qiime2R)
+library(vegan)
+library(colorRamps)
+
+table<- read_qza("../Data/table_SMOQ_rar.qza")$data
+
+metadata<- read.delim("../Data/its_map.txt")
+
+
+#convrt data
+presabs<- function(x){x[x>0]=1 
+return(t(x))}
+tables_presabs<- presabs(table)
+table_presabs<- tables_presabs %>% as.data.frame() %>% rownames_to_column(var = "SampleID") %>% 
+  arrange(SampleID) %>% column_to_rownames(var = "SampleID")
+
+#betapart function with jaccard 
+x<- beta.pair(table_presabs, index.family = "jaccard")
+
+#extract each part
+jac<- x$beta.jac
+jtu<- x$beta.jtu
+jne<- x$beta.jne
+
+#jac<- x$beta.sor
+#jtu<- x$beta.sim
+#jne<- x$beta.sne
+
+env1<- table_presabs%>% as.data.frame() %>% rownames_to_column(var="SampleID") %>% inner_join(metadata)
+
+
+jacs<- betadisper(jac,factor(env1$Poligono))
+jtus<- betadisper(jtu,factor(env1$Poligono))
+jnes<- betadisper(jne,factor(env1$Poligono))
+
+ 
+
+library(tidyverse)
+library(ggordiplots)
+
+function_plot_beta<- function(x,env){
+  y <- gg_ordiplot(x, groups = env$Poligono, hull = FALSE, spiders = TRUE, 
+                   ellipse = FALSE, plot = FALSE, label = TRUE)
+  xlabs <- y$plot$labels$x
+  ylabs <- y$plot$labels$y
+  z<-ggplot()+ geom_point(data = y$df_ord %>% rownames_to_column(var="SampleID") %>% 
+                            inner_join(env),
+                          aes(x = x, y = y, color = Group, shape=Season), size = 3) + 
+    xlab(xlabs) +  ylab(ylabs)+
+    geom_segment(data = y$df_spiders, aes(x = cntr.x, xend = x, y = cntr.y, yend = y, color = Group), 
+                 show.legend = FALSE)
+  
+  a<-z+geom_label(
+    data = y$df_mean.ord,
+    aes(x = x, y = y, label=Group))+guides(
+      color=guide_legend(title="Polygon"))+theme_linedraw() +
+    geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+    geom_hline(yintercept = 0, linetype = 2) +
+    theme_linedraw()+
+    scale_fill_viridis_d(option ="turbo", name="Polygon")+#color of points 
+    scale_color_viridis_d(option ="turbo" )+#color of points 
+    theme(axis.text = element_text(colour = "black", size = 12),
+          axis.title = element_text(colour = "black", size = 12),
+          legend.text = element_text(size = 10),
+          legend.title = element_text(size = 12), 
+          legend.position = "right", 
+          legend.box = "vertical",
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())+
+    theme(plot.margin = unit(c(0, 0, 0, 0), "cm"))+theme(aspect.ratio =3/10)
+  return(a)
+}
+ 
+
+
+#jaccard
+plot_jac<-  function_plot_beta(jacs, env1)
+plot_jac=plot_jac+ guides(colour = guide_legend(nrow = 1, title = "Polygon"),
+                          shape = guide_legend(nrow = 1) )+theme(legend.position = "top")
+
+#turnover
+plot_turn<- function_plot_beta(jtus, env1)
+
+#nestedness
+
+plot_nes<-function_plot_beta(jnes, env1)
+
+
+heads=betapart::beta.multi(table_presabs, index.family = "jaccard")
+
+
+library(cowplot)
+leg<- get_legend(plot_jac)
+a<-plot_grid(plot_jac+theme(legend.position = "none")+ylab("DIM2")+xlab("")+theme(aspect.ratio =8/10)+ggtitle(paste("Global Jaccard dissimilarity =", round(heads$beta.JAC[1], digits = 3))),  
+             plot_turn+theme(legend.position = "none")+ylab("DIM2")+xlab("")+theme(aspect.ratio =8/10)+ggtitle(paste("Global Turnover component =", round(heads$beta.JTU[1], digits = 3))),  
+             plot_nes+theme(legend.position = "none")+ylab("DIM2")+xlab("DIM1")+theme(aspect.ratio =8/10)+ggtitle(paste("Global  Nestedness component =", round(heads$beta.JNE[1], digits = 3))), 
+             ncol = 1, align = "hv", labels = c("A", "B", "C"), label_x = 0.1)
+b= plot_grid(leg,a, ncol = 1, rel_heights = c(0.2,1))
+
+
+b
+ggsave("../Plots/gao_beta_jaccard.jpg",width = 5, height =10, dpi = 300, plot = b, device = "jpg")
+
+
+```
+
