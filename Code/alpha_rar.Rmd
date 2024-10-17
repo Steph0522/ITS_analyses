@@ -12,7 +12,7 @@ library(tidyverse)
 library(hillR)
 library(ggpubr)
 
-table_otus<- read_qza("../Data/table_SMOQ_filt.qza")$data
+table_otus<- read_qza("../Data/table_SMOQ_rar.qza")$data
 table_asvs<- read_qza("../Data/table_SMDR.qza")$data
 
 meta<- read.delim("../Data/its_map.txt")
@@ -200,7 +200,7 @@ strip <- strip_themed(background_x = elem_list_rect(fill = colors))
 labels <- let0 %>% rownames_to_column(var = "interact") %>% 
   separate("interact", c("Poligono", "Season"), remove = F)
 
-labels<- labels  %>% mutate(val=1600)
+labels<- labels  %>% mutate(val=600)
 
 
 a <- qs %>%   
@@ -236,7 +236,7 @@ a <- qs %>%
 labels <- let1 %>% rownames_to_column(var = "interact") %>% 
   separate("interact", c("Poligono", "Season"), remove = F)
 
-labels<- labels  %>% mutate(val=250)
+labels<- labels  %>% mutate(val=180)
 
 
 b <- qs %>%   
@@ -275,7 +275,7 @@ b
 labels <- let2 %>% rownames_to_column(var = "interact") %>% 
   separate("interact", c("Poligono", "Season"), remove = F)
 
-labels<- labels  %>% mutate(val=80)
+labels<- labels  %>% mutate(val=70)
 
 c <- qs %>%   
   mutate(
@@ -322,7 +322,7 @@ alpha<- plot_grid(a + theme(legend.position = "none", axis.title.x = element_bla
                   labels = c("A", "B", "C"),
                   ncol = 1)
 
-ggsave('../Plots/alpha_nosingletons.png', width = 11, height = 11, dpi = 300, plot =alpha)
+ggsave('../Plots/alpha_rar.png', width = 11, height = 11, dpi = 300, plot =alpha)
 
 ```
 

@@ -1,0 +1,1691 @@
+---
+title: "QPS"
+output: html_document
+date: "2024-08-22"
+---
+
+
+
+```{r}
+library(reshape2)
+library(picante)
+library(readxl)
+library(tidyverse)
+library(pgirmess)
+library(car)
+library(ggplot2)
+library(ggpubr)
+library(ggvegan)
+library(ggordiplots)
+library(qiime2R)
+library(picante)
+```
+
+
+```{r, eval=FALSE}
+dry<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_secas_all") %>% mutate(Season="Dry")
+wet<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_lluvias_all") %>% mutate(Season="Wet")
+
+# select characteristics in both datasets
+drys<- dry %>% dplyr::select( Poligono,Sitio,Transecto,pH,MO,N,P,Season)
+wets<- wet %>% dplyr::select(Poligono,Sitio,Transecto,pH,MO,N,P,Season)
+
+env_season<- rbind(drys,wets) %>% mutate(sea=c(rep("D",36), rep("R",36))) %>% unite("SampleID", c("Poligono", "Sitio", "Transecto", "sea"),remove = F, sep = "")
+
+env_season$Poligono<- factor(env_season$Poligono, levels = c(1,2,3,4,5,6),
+                             labels = c("P1", "P2", "P3", "P4", "P5", "P6"))
+env_season$Season<- factor(env_season$Season)
+
+env_season<-env_season %>%  unite("interact", c("Poligono", "Season"), remove = F)
+
+df <-env_season  %>% column_to_rownames(var="SampleID") %>% dplyr::select(pH,MO,N,P)
+
+df_ph = df %>% dplyr::select(pH)
+dist_ph = dist(df_ph)
+
+df_mo = df %>% dplyr::select(MO)
+dist_mo = dist(df_mo)
+
+df_n = df %>% dplyr::select(N)
+dist_n = dist(df_n)
+
+df_p = df %>% dplyr::select(P)
+dist_p = dist(df_p)
+
+
+
+abund_table=read_qza("../Data/table_SMOQ_rar.qza")$data #
+tree = read_qza("../Data/tree_SMOQ_rar/rooted_tree.qza")$data
+phydist <- cophenetic(tree)
+comdis = comdist(t(abund_table), phydist, abundance.weighted = TRUE)
+
+data(phylocom)
+comdist(phylocom$sample, cophenetic(phylocom$phylo), abundance.weighted=TRUE)
+
+# Qantitative Process Estimate (QPE) from Stegen et al. 2013
+# This approach requires that phylogenetic distances (PD) among taxa reflect differences in 
+# the ecological niches they inhabit, thus, carry a phylogenetic signal. 
+# The presence of phylogenetic signals was tested using Mantel correlograms, as described in Stegen et al. 2013
+# The necessary R script was provided by Jianjun Wang and used in the study of Langenheder et al. 2017 FEMS Microbiology Ecology
+
+# After performing phylogenetic signal tests, let's use mantel.correlog function and plot the results
+# The following script was run separately on 16S and 18S dataset!
+library(readr)
+library(vegan)
+library(picante)
+library(ape)
+library(dplyr)
+
+
+
+phylo.sig.correlog = mantel.correlog(comdis,dist_ph,
+                                     nperm=999,
+                                     cutoff=FALSE,
+                                     n.class=50,
+                                     mult="bonferroni");
+phylo.sig.correlog[["mantel.res"]]
+
+write.csv(phylo.sig.correlog$mantel.res, "ph_signal.csv",  quote=F);
+
+
+
+phylo.sig.correlog = mantel.correlog(comdis, dist_mo,
+                                     nperm=999,
+                                     cutoff=FALSE,
+                                     n.class=50,
+                                     mult="bonferroni");
+phylo.sig.correlog[["mantel.res"]]
+
+write.csv(phylo.sig.correlog$mantel.res, "mo_signal.csv",  quote=F);
+
+
+
+phylo.sig.correlog = mantel.correlog(comdis, dist_p,
+                                     nperm=999,
+                                     cutoff=FALSE,
+                                     n.class=50,
+                                     mult="bonferroni");
+phylo.sig.correlog[["mantel.res"]]
+
+write.csv(phylo.sig.correlog$mantel.res, "p_signal.csv",  quote=F);
+
+
+phylo.sig.correlog = mantel.correlog(comdis, dist_n,
+                                     nperm=999,
+                                     cutoff=FALSE,
+                                     n.class=50,
+                                     mult="bonferroni");
+phylo.sig.correlog[["mantel.res"]]
+
+write.csv(phylo.sig.correlog$mantel.res, "n_signal.csv",  quote=F);
+```
+
+
+```{r}
+# Plotting the Mantel correlograms
+# Figure S5 and S6
+
+# 16S dataset (Figure S5)
+
+#pdf("phylo_signals.pdf")
+png("phylo_signals.png", width = 1600, height = 1200, res = 200)
+
+
+par(mfrow=c(2,2))
+phylo.sig<-read.csv("../Data/ph_signal.csv", row.names = 1, header=T, sep=",")
+plot(phylo.sig[,c(1,3)],
+             xlab="Phylogenetic Distance Class", ylab="Mantel Test Statistic") +lines(phylo.sig[,c(1,3)]) + points(phylo.sig[,c(1,3)], pch=21, bg="white", col="black", pty=4)+
+  points(phylo.sig[,c(1,3)][phylo.sig[,4] < 0.05,], pch=21, bg="black", col="black", pty=4) + abline(h=0, lty=2, col="red") +
+  title("pH")
+
+phylo.sig<-read.csv("../Data/mo_signal.csv", row.names = 1, header=T, sep=",")
+plot(phylo.sig[,c(1,3)],
+           xlab="Phylogenetic Distance Class", ylab="Mantel Test Statistic") +lines(phylo.sig[,c(1,3)]) + points(phylo.sig[,c(1,3)], pch=21, bg="white", col="black", pty=4)+
+  points(phylo.sig[,c(1,3)][phylo.sig[,4] < 0.05,], pch=21, bg="black", col="black", pty=4) + abline(h=0, lty=2, col="red") +
+  title("OM")
+
+phylo.sig<-read.csv("../Data/n_signal.csv", row.names = 1, header=T, sep=",")
+phylo.sig = drop_na(phylo.sig)
+plot(phylo.sig[,c(1,3)],
+           xlab="Phylogenetic Distance Class", ylab="Mantel Test Statistic") +lines(phylo.sig[,c(1,3)]) + points(phylo.sig[,c(1,3)], pch=21, bg="white", col="black", pty=4)+
+  points(phylo.sig[,c(1,3)][phylo.sig[,4] < 0.05,], pch=21, bg="black", col="black", pty=4) + abline(h=0, lty=2, col="red") +
+  title("Total nitrogen")
+
+phylo.sig<-read.csv("../Data/p_signal.csv", row.names = 1, header=T, sep=",")
+plot(phylo.sig[,c(1,3)],
+                   xlab="Phylogenetic Distance Class", ylab="Mantel Test Statistic") +lines(phylo.sig[,c(1,3)]) + points(phylo.sig[,c(1,3)], pch=21, bg="white", col="black", pty=4)+
+  points(phylo.sig[,c(1,3)][phylo.sig[,4] < 0.05,], pch=21, bg="black", col="black", pty=4) + abline(h=0, lty=2, col="red") +
+  title("Total phosphorus")
+
+dev.off()
+
+
+```
+
+
+```{r, eval=FALSE}
+
+# After I evaluated the existence of phylogenetic signal, QPE analyses can be performed
+# First step of the QPE approach (it can be time-consuming process, so I run it on UPPMAX server)
+
+
+dry<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_secas_all") %>% mutate(Season="Dry")
+wet<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_lluvias_all") %>% mutate(Season="Wet")
+
+drys<- dry %>% dplyr::select( Poligono,Sitio,Transecto,pH,MO,N,P,Season)
+wets<- wet %>% dplyr::select(Poligono,Sitio,Transecto,pH,MO,N,P,Season)
+
+metadata<- rbind(drys,wets) %>% mutate(sea=c(rep("D",36), rep("R",36))) %>% 
+  unite("SampleID", c("Poligono", "Sitio", "Transecto", "sea"),remove = F, sep = "") %>% column_to_rownames(var = "SampleID")
+
+meta_table=metadata
+meta_table$Poligono<- as.factor(meta_table$Poligono)
+
+
+tp1d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="1"),]
+tp2d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="2"),]
+tp3d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="3"),]
+tp4d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="4"),]
+tp5d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="5"),]
+tp6d<- meta_table[which(meta_table$Season=="Dry" & meta_table$Poligono=="6"),]
+
+
+tp1r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="1"),]
+tp2r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="2"),]
+tp3r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="3"),]
+tp4r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="4"),]
+tp5r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="5"),]
+tp6r<- meta_table[which(meta_table$Season=="Wet" & meta_table$Poligono=="6"),]
+
+
+tp1di=row.names(tp1d)
+tp2di=row.names(tp2d)
+tp3di=row.names(tp3d)
+tp4di=row.names(tp4d)
+tp5di=row.names(tp5d)
+tp6di=row.names(tp6d)
+
+tp1ri=row.names(tp1r)
+tp2ri=row.names(tp2r)
+tp3ri=row.names(tp3r)
+tp4ri=row.names(tp4r)
+tp5ri=row.names(tp5r)
+tp6ri=row.names(tp6r)
+
+library(picante)
+library(qiime2R)
+abund_table=read_qza("../Data/table_SMOQ_rar.qza")$data #
+name= colnames(abund_table)
+tree = read_qza("../Data/tree_SMOQ_rar/rooted_tree.qza")$data
+m=match.phylo.data(tree, data.frame(abund_table, check.names = F, check.rows = F))
+tree=m$phy
+abund_table=m$data
+
+abund_table=t(abund_table)
+row.names(abund_table)
+
+table1d=subset(abund_table, row.names(abund_table) %in% tp1di)
+table2d=subset(abund_table, row.names(abund_table) %in% tp2di)
+table3d=subset(abund_table, row.names(abund_table) %in% tp3di)
+table4d=subset(abund_table, row.names(abund_table) %in% tp4di)
+table5d=subset(abund_table, row.names(abund_table) %in% tp5di)
+table6d=subset(abund_table, row.names(abund_table) %in% tp6di)
+
+table1r=subset(abund_table, row.names(abund_table) %in% tp1ri)
+table2r=subset(abund_table, row.names(abund_table) %in% tp2ri)
+table3r=subset(abund_table, row.names(abund_table) %in% tp3ri)
+table4r=subset(abund_table, row.names(abund_table) %in% tp4ri)
+table5r=subset(abund_table, row.names(abund_table) %in% tp5ri)
+table6r=subset(abund_table, row.names(abund_table) %in% tp6ri)
+
+m=match.phylo.data(tree, data.frame(t(table1d), check.names = F, check.rows = F))
+abund_table1d=data.frame(m$data, check.names = F)
+abund_table1d = abund_table1d[which(rowSums(abund_table1d) != 0),]
+m=match.phylo.data(tree, abund_table1d)
+OTU_tree1d=m$phy
+
+
+m=match.phylo.data(tree, data.frame(t(table2d), check.names = F, check.rows = F))
+abund_table2d=data.frame(m$data, check.names = F)
+abund_table2d = abund_table2d[which(rowSums(abund_table2d) != 0),]
+m=match.phylo.data(tree, abund_table2d)
+OTU_tree2d=m$phy
+
+
+m=match.phylo.data(tree, data.frame(t(table3d), check.names = F, check.rows = F))
+abund_table3d=data.frame(m$data, check.names = F)
+abund_table3d = abund_table3d[which(rowSums(abund_table3d) != 0),]
+m=match.phylo.data(tree, abund_table3d)
+OTU_tree3d=m$phy
+
+m=match.phylo.data(tree, data.frame(t(table4d), check.names = F, check.rows = F))
+abund_table4d=data.frame(m$data, check.names = F)
+abund_table4d = abund_table4d[which(rowSums(abund_table4d) != 0),]
+m=match.phylo.data(tree, abund_table4d)
+OTU_tree4d=m$phy
+
+
+m=match.phylo.data(tree, data.frame(t(table5d), check.names = F, check.rows = F))
+abund_table5d=data.frame(m$data, check.names = F)
+abund_table5d = abund_table5d[which(rowSums(abund_table5d) != 0),]
+m=match.phylo.data(tree, abund_table5d)
+OTU_tree5d=m$phy
+
+
+m=match.phylo.data(tree, data.frame(t(table6d), check.names = F, check.rows = F))
+abund_table6d=data.frame(m$data, check.names = F)
+abund_table6d = abund_table6d[which(rowSums(abund_table6d) != 0),]
+m=match.phylo.data(tree, abund_table6d)
+OTU_tree6d=m$phy
+
+
+
+
+m=match.phylo.data(tree, data.frame(t(table1r), check.names = F, check.rows = F))
+abund_table1r=data.frame(m$data, check.names = F)
+abund_table1r = abund_table1r[which(rowSums(abund_table1r) != 0),]
+m=match.phylo.data(tree, abund_table1r)
+OTU_tree1r=m$phy
+
+
+m=match.phylo.data(tree, data.frame(t(table2r), check.names = F, check.rows = F))
+abund_table2r=data.frame(m$data, check.names = F)
+abund_table2r = abund_table2r[which(rowSums(abund_table2d) != 0),]
+m=match.phylo.data(tree, abund_table2r)
+OTU_tree2r=m$phy
+
+m=match.phylo.data(tree, data.frame(t(table3r), check.names = F, check.rows = F))
+abund_table3r=data.frame(m$data, check.names = F)
+abund_table3r = abund_table3r[which(rowSums(abund_table3r) != 0),]
+m=match.phylo.data(tree, abund_table3r)
+OTU_tree3r=m$phy
+
+m=match.phylo.data(tree, data.frame(t(table4r), check.names = F, check.rows = F))
+abund_table4r=data.frame(m$data, check.names = F)
+abund_table4r = abund_table4r[which(rowSums(abund_table4r) != 0),]
+m=match.phylo.data(tree, abund_table4r)
+OTU_tree4r=m$phy
+
+m=match.phylo.data(tree, data.frame(t(table5r), check.names = F, check.rows = F))
+abund_table5r=data.frame(m$data, check.names = F)
+abund_table5r = abund_table5r[which(rowSums(abund_table5r) != 0),]
+m=match.phylo.data(tree, abund_table5r)
+OTU_tree5r=m$phy
+
+
+m=match.phylo.data(tree, data.frame(t(table6r), check.names = F, check.rows = F))
+abund_table6r=data.frame(m$data, check.names = F)
+abund_table6r = abund_table6r[which(rowSums(abund_table6r) != 0),]
+m=match.phylo.data(tree, abund_table6r)
+OTU_tree6r=m$phy
+
+
+#1d
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table1d),cophenetic(OTU_tree1d),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table1d),colnames(beta.mntd.weighted));
+identical(colnames(abund_table1d),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table1d),ncol(abund_table1d),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table1d),taxaShuffle(cophenetic(OTU_tree1d)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table1d),ncol=ncol(abund_table1d));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table1d)-1)) {
+  for (rows in (columns+1):ncol(abund_table1d)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table1d);
+colnames(weighted.bNTI) = colnames(abund_table1d);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI1d.csv",quote=F)
+
+#2d
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table2d),cophenetic(OTU_tree2d),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table2d),colnames(beta.mntd.weighted));
+identical(colnames(abund_table2d),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table2d),ncol(abund_table2d),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table2d),taxaShuffle(cophenetic(OTU_tree2d)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table2d),ncol=ncol(abund_table2d));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table2d)-1)) {
+  for (rows in (columns+1):ncol(abund_table2d)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table2d);
+colnames(weighted.bNTI) = colnames(abund_table2d);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI2d.csv",quote=F)
+
+#3d
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table3d),cophenetic(OTU_tree3d),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table3d),colnames(beta.mntd.weighted));
+identical(colnames(abund_table3d),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table3d),ncol(abund_table3d),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table3d),taxaShuffle(cophenetic(OTU_tree3d)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table3d),ncol=ncol(abund_table3d));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table3d)-1)) {
+  for (rows in (columns+1):ncol(abund_table3d)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table3d);
+colnames(weighted.bNTI) = colnames(abund_table3d);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI3d.csv",quote=F)
+
+#4d
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table4d),cophenetic(OTU_tree4d),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table4d),colnames(beta.mntd.weighted));
+identical(colnames(abund_table4d),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table4d),ncol(abund_table4d),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table4d),taxaShuffle(cophenetic(OTU_tree4d)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table4d),ncol=ncol(abund_table4d));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table4d)-1)) {
+  for (rows in (columns+1):ncol(abund_table4d)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table4d);
+colnames(weighted.bNTI) = colnames(abund_table4d);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI4d.csv",quote=F)
+
+#5d
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table5d),cophenetic(OTU_tree5d),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table5d),colnames(beta.mntd.weighted));
+identical(colnames(abund_table5d),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table5d),ncol(abund_table5d),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table5d),taxaShuffle(cophenetic(OTU_tree5d)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table5d),ncol=ncol(abund_table5d));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table5d)-1)) {
+  for (rows in (columns+1):ncol(abund_table5d)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table5d);
+colnames(weighted.bNTI) = colnames(abund_table5d);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI5d.csv",quote=F)
+
+#6d
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table6d),cophenetic(OTU_tree6d),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table6d),colnames(beta.mntd.weighted));
+identical(colnames(abund_table6d),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table6d),ncol(abund_table6d),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table6d),taxaShuffle(cophenetic(OTU_tree6d)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table6d),ncol=ncol(abund_table6d));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table6d)-1)) {
+  for (rows in (columns+1):ncol(abund_table6d)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table6d);
+colnames(weighted.bNTI) = colnames(abund_table6d);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI6d.csv",quote=F)
+
+#1r
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table1r),cophenetic(OTU_tree1r),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table1r),colnames(beta.mntd.weighted));
+identical(colnames(abund_table1r),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table1r),ncol(abund_table1r),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table1r),taxaShuffle(cophenetic(OTU_tree1r)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table1r),ncol=ncol(abund_table1r));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table1r)-1)) {
+  for (rows in (columns+1):ncol(abund_table1r)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table1r);
+colnames(weighted.bNTI) = colnames(abund_table1r);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI1r.csv",quote=F)
+
+#2r
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table2r),cophenetic(OTU_tree2r),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table2r),colnames(beta.mntd.weighted));
+identical(colnames(abund_table2r),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table2r),ncol(abund_table2r),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table2r),taxaShuffle(cophenetic(OTU_tree2r)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table2r),ncol=ncol(abund_table2r));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table2r)-1)) {
+  for (rows in (columns+1):ncol(abund_table2r)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table2r);
+colnames(weighted.bNTI) = colnames(abund_table2r);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI2r.csv",quote=F)
+
+#3r
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table3r),cophenetic(OTU_tree3r),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table3r),colnames(beta.mntd.weighted));
+identical(colnames(abund_table3r),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table3r),ncol(abund_table3r),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table3r),taxaShuffle(cophenetic(OTU_tree3r)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table3r),ncol=ncol(abund_table3r));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table3r)-1)) {
+  for (rows in (columns+1):ncol(abund_table3r)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table3r);
+colnames(weighted.bNTI) = colnames(abund_table3r);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI3r.csv",quote=F)
+
+#4r
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table4r),cophenetic(OTU_tree4r),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table4r),colnames(beta.mntd.weighted));
+identical(colnames(abund_table4r),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table4r),ncol(abund_table4r),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table4r),taxaShuffle(cophenetic(OTU_tree4r)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table4r),ncol=ncol(abund_table4r));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table4r)-1)) {
+  for (rows in (columns+1):ncol(abund_table4r)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table4r);
+colnames(weighted.bNTI) = colnames(abund_table4r);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI4r.csv",quote=F)
+
+#5r
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table5r),cophenetic(OTU_tree5r),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table5r),colnames(beta.mntd.weighted));
+identical(colnames(abund_table5r),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table5r),ncol(abund_table5r),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table5r),taxaShuffle(cophenetic(OTU_tree5r)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table5r),ncol=ncol(abund_table5r));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table5r)-1)) {
+  for (rows in (columns+1):ncol(abund_table5r)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table5r);
+colnames(weighted.bNTI) = colnames(abund_table5r);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI5r.csv",quote=F)
+
+#6r
+beta.mntd.weighted = as.matrix(comdistnt(t(abund_table6r),cophenetic(OTU_tree6r),abundance.weighted=T));
+dim(beta.mntd.weighted);
+
+identical(colnames(abund_table6r),colnames(beta.mntd.weighted));
+identical(colnames(abund_table6r),rownames(beta.mntd.weighted));
+
+beta.reps = 999; 
+rand.weighted.bMNTD.comp = array(c(-999),dim=c(ncol(abund_table6r),ncol(abund_table6r),beta.reps));
+dim(rand.weighted.bMNTD.comp);
+
+for (rep in 1:beta.reps) {
+  
+  rand.weighted.bMNTD.comp[,,rep] = as.matrix(comdistnt(t(abund_table6r),taxaShuffle(cophenetic(OTU_tree6r)),abundance.weighted=T,exclude.conspecifics = F));
+  
+  print(c(date(),rep));
+  
+}
+
+weighted.bNTI = matrix(c(NA),nrow=ncol(abund_table6r),ncol=ncol(abund_table6r));
+dim(weighted.bNTI);
+
+for (columns in 1:(ncol(abund_table6r)-1)) {
+  for (rows in (columns+1):ncol(abund_table6r)) {
+    
+    rand.vals = rand.weighted.bMNTD.comp[rows,columns,];
+    weighted.bNTI[rows,columns] = (beta.mntd.weighted[rows,columns] - mean(rand.vals)) / sd(rand.vals);
+    rm("rand.vals");
+    
+  };
+};
+
+rownames(weighted.bNTI) = colnames(abund_table6r);
+colnames(weighted.bNTI) = colnames(abund_table6r);
+weighted.bNTI;
+write.csv(weighted.bNTI, "./weighted_bNTI6r.csv",quote=F)
+
+```
+
+
+
+
+```{r, eval=FALSE}
+# For 16S dataset
+comm=read_qza("../Data/table_SMOQ_rar.qza")$data #
+Tree = read_qza("../Data/tree_SMOQ_rar/rooted_tree.qza")$data
+
+mc=match.phylo.data(Tree, data.frame(comm, check.names = F, check.rows = F))
+
+comm=mc$data
+comm=data.frame(t(comm))
+
+
+
+abund_table1d=subset(abund_table, row.names(abund_table) %in% tp1di)
+abund_table2d=subset(abund_table, row.names(abund_table) %in% tp2di)
+abund_table3d=subset(abund_table, row.names(abund_table) %in% tp3di)
+abund_table4d=subset(abund_table, row.names(abund_table) %in% tp4di)
+abund_table5d=subset(abund_table, row.names(abund_table) %in% tp5di)
+abund_table6d=subset(abund_table, row.names(abund_table) %in% tp6di)
+
+abund_table1r=subset(abund_table, row.names(abund_table) %in% tp1ri)
+abund_table2r=subset(abund_table, row.names(abund_table) %in% tp2ri)
+abund_table3r=subset(abund_table, row.names(abund_table) %in% tp3ri)
+abund_table4r=subset(abund_table, row.names(abund_table) %in% tp4ri)
+abund_table5r=subset(abund_table, row.names(abund_table) %in% tp5ri)
+abund_table6r=subset(abund_table, row.names(abund_table) %in% tp6ri)
+
+
+abund_table1d = abund_table1d[,which(colSums(abund_table1d) != 0)]
+abund_table2d = abund_table2d[,which(colSums(abund_table2d) != 0)]
+abund_table3d = abund_table3d[,which(colSums(abund_table3d) != 0)]
+abund_table4d = abund_table4d[,which(colSums(abund_table4d) != 0)]
+abund_table5d = abund_table5d[,which(colSums(abund_table5d) != 0)]
+abund_table6d = abund_table6d[,which(colSums(abund_table6d) != 0)]
+
+abund_table1r = abund_table1r[,which(colSums(abund_table1r) != 0)]
+abund_table2r = abund_table2r[,which(colSums(abund_table2r) != 0)]
+abund_table3r = abund_table3r[,which(colSums(abund_table3r) != 0)]
+abund_table4r = abund_table4r[,which(colSums(abund_table4r) != 0)]
+abund_table5r = abund_table5r[,which(colSums(abund_table5r) != 0)]
+abund_table6r = abund_table6r[,which(colSums(abund_table6r) != 0)]
+
+
+
+
+source("../Scripts/raup_crick_abundance.R")
+library(phyloseq)
+library(picante)
+library(ape)
+rc1da=raup_crick_abundance2(abund_table1d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc2da=raup_crick_abundance2(abund_table2d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc3da=raup_crick_abundance2(abund_table3d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc4da=raup_crick_abundance2(abund_table4d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc5da=raup_crick_abundance2(abund_table5d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc6da=raup_crick_abundance2(abund_table6d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+
+rc1ra=raup_crick_abundance2(abund_table1r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc2ra=raup_crick_abundance2(abund_table2r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc3ra=raup_crick_abundance2(abund_table3r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc4ra=raup_crick_abundance2(abund_table4r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc5ra=raup_crick_abundance2(abund_table5r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+rc6ra=raup_crick_abundance2(abund_table6r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+
+write.csv(as.matrix(rc1da), "./rc1da_abundance.csv")
+write.csv(as.matrix(rc2da), "./rc2da_abundance.csv")
+write.csv(as.matrix(rc3da), "./rc3da_abundance.csv")
+write.csv(as.matrix(rc4da), "./rc4da_abundance.csv")
+write.csv(as.matrix(rc5da), "./rc5da_abundance.csv")
+write.csv(as.matrix(rc6da), "./rc6da_abundance.csv")
+
+write.csv(as.matrix(rc1ra), "./rc1ra_abundance.csv")
+write.csv(as.matrix(rc2ra), "./rc2ra_abundance.csv")
+write.csv(as.matrix(rc3ra), "./rc3ra_abundance.csv")
+write.csv(as.matrix(rc4ra), "./rc4ra_abundance.csv")
+write.csv(as.matrix(rc5ra), "./rc5ra_abundance.csv")
+write.csv(as.matrix(rc6ra), "./rc6ra_abundance.csv")
+
+
+
+
+```
+
+```{r}
+library(reshape2)
+
+#1d
+select_1d=read.csv("../Data/weighted_bNTI1d.csv", check.names = F, row.names = 1)
+head(select_1d)
+sel_1d = melt(as.matrix(select_1d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_1d) <- c("Row", "Column", "Value")
+sel_1d = sel_1d %>%     mutate(
+    selection = ifelse(
+      abs(Value) > 2,
+      ifelse(Value > 2, "variable", "homogeneous"),
+      "no selection"
+    ),
+    percentage_variable = ifelse(
+      abs(Value) > 2 & selection == "variable", 
+      100, 
+      0
+    ),
+    percentage_homog = ifelse(
+      abs(Value) > 2 & selection == "homogeneous", 
+      100, 
+      0
+    )
+  )
+
+
+#2d
+select_2d=read.csv("../Data/weighted_bNTI2d.csv", check.names = F, row.names = 1)
+head(select_2d)
+sel_2d = melt(as.matrix(select_2d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_2d) <- c("Row", "Column", "Value")
+sel_2d = sel_2d %>%   mutate(
+    selection = ifelse(
+      abs(Value) > 2,
+      ifelse(Value > 2, "variable", "homogeneous"),
+      "no selection"
+    ),
+    percentage_variable = ifelse(
+      abs(Value) > 2 & selection == "variable", 
+      100, 
+      0
+    ),
+    percentage_homog = ifelse(
+      abs(Value) > 2 & selection == "homogeneous", 
+      100, 
+      0
+    )
+  )
+
+
+#3d
+select_3d=read.csv("../Data/weighted_bNTI3d.csv", check.names = F, row.names = 1)
+head(select_3d)
+sel_3d = melt(as.matrix(select_3d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_3d) <- c("Row", "Column", "Value")
+sel_3d = sel_3d %>%   mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+
+
+#4d
+select_4d=read.csv("../Data/weighted_bNTI4d.csv", check.names = F, row.names = 1)
+head(select_4d)
+sel_4d = melt(as.matrix(select_4d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_4d) <- c("Row", "Column", "Value")
+sel_4d = sel_4d %>%   mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+#5d
+select_5d=read.csv("../Data/weighted_bNTI5d.csv", check.names = F, row.names = 1)
+head(select_5d)
+sel_5d = melt(as.matrix(select_5d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_5d) <- c("Row", "Column", "Value")
+sel_5d = sel_5d %>%   mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+
+#6d
+select_6d=read.csv("../Data/weighted_bNTI6d.csv", check.names = F, row.names = 1)
+head(select_6d)
+sel_6d = melt(as.matrix(select_6d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_6d) <- c("Row", "Column", "Value")
+sel_6d = sel_6d %>%   mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+
+
+#1r
+select_1r=read.csv("../Data/weighted_bNTI1r.csv", check.names = F, row.names = 1)
+head(select_1r)
+sel_1r = melt(as.matrix(select_1r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_1r) <- c("Row", "Column", "Value")
+sel_1r = sel_1r %>%     mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+
+
+#2r
+select_2r=read.csv("../Data/weighted_bNTI2r.csv", check.names = F, row.names = 1)
+head(select_2r)
+sel_2r = melt(as.matrix(select_2r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_2r) <- c("Row", "Column", "Value")
+sel_2r = sel_2r %>%   mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+
+
+#3r
+select_3r=read.csv("../Data/weighted_bNTI3r.csv", check.names = F, row.names = 1)
+head(select_3r)
+sel_3r = melt(as.matrix(select_3r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_3r) <- c("Row", "Column", "Value")
+sel_3r = sel_3r %>%   mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+
+
+#4r
+select_4r=read.csv("../Data/weighted_bNTI4r.csv", check.names = F, row.names = 1)
+head(select_4r)
+sel_4r = melt(as.matrix(select_4r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_4r) <- c("Row", "Column", "Value")
+sel_4r = sel_4r %>%   mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+#5r
+select_5r=read.csv("../Data/weighted_bNTI5r.csv", check.names = F, row.names = 1)
+head(select_5r)
+sel_5r = melt(as.matrix(select_5r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_5r) <- c("Row", "Column", "Value")
+sel_5r = sel_5r %>%   mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+
+#6r
+select_6r=read.csv("../Data/weighted_bNTI6r.csv", check.names = F, row.names = 1)
+head(select_6r)
+sel_6r = melt(as.matrix(select_6r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(sel_6r) <- c("Row", "Column", "Value")
+sel_6r = sel_6r %>%   mutate(
+  selection = ifelse(
+    abs(Value) > 2,
+    ifelse(Value > 2, "variable", "homogeneous"),
+    "no selection"
+  ),
+  percentage_variable = ifelse(
+    abs(Value) > 2 & selection == "variable", 
+    100, 
+    0
+  ),
+  percentage_homog = ifelse(
+    abs(Value) > 2 & selection == "homogeneous", 
+    100, 
+    0
+  )
+)
+
+sel1d = sel_1d %>% mutate(pol="1_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel2d = sel_2d %>% mutate(pol="2_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel3d = sel_3d %>% mutate(pol="3_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel4d = sel_4d %>% mutate(pol="4_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel5d = sel_5d %>% mutate(pol="5_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel6d = sel_6d %>% mutate(pol="6_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+
+sel1r = sel_1r %>% mutate(pol="1_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel2r = sel_2r %>% mutate(pol="2_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel3r = sel_3r %>% mutate(pol="3_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel4r = sel_4r %>% mutate(pol="4_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel5r = sel_5r %>% mutate(pol="5_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+sel6r = sel_6r %>% mutate(pol="6_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+
+
+selection = rbind(sel1d, sel2d, sel3d, sel4d, sel5d, sel6d,
+                  sel1r, sel2r, sel3r, sel4r, sel5r, sel6r)
+
+selection = selection %>% mutate(selection=percentage_variable+percentage_homog)
+
+```
+
+
+```{r}
+rc1da = read.csv("../Data/rc1da_abundance.csv", check.names = F)
+#1d
+nosel_1d= as.matrix(rc1da)
+lower_1d <- lower.tri(nosel_1d)
+nosel_1d[!lower_1d] <- NA
+nosel_1d = melt(as.matrix(nosel_1d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_1d) <- c("Row", "Column", "Value")
+nosel_1d = nosel_1d %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+
+#2d
+rc2da = read.csv("../Data/rc2da_abundance.csv", check.names = F)
+
+nosel_2d= as.matrix(rc2da)
+lower_2d <- lower.tri(nosel_2d)
+nosel_2d[!lower_2d] <- NA
+nosel_2d = melt(as.matrix(nosel_2d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_2d) <- c("Row", "Column", "Value")
+nosel_2d = nosel_2d %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+
+
+#3d
+rc3da = read.csv("../Data/rc3da_abundance.csv", check.names = F)
+
+nosel_3d= as.matrix(rc3da)
+lower_3d <- lower.tri(nosel_3d)
+nosel_3d[!lower_3d] <- NA
+nosel_3d = melt(as.matrix(nosel_3d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_3d) <- c("Row", "Column", "Value")
+nosel_3d = nosel_3d %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+
+#4d
+rc4da = read.csv("../Data/rc4da_abundance.csv", check.names = F)
+
+nosel_4d= as.matrix(rc4da)
+lower_4d <- lower.tri(nosel_4d)
+nosel_4d[!lower_4d] <- NA
+nosel_4d = melt(as.matrix(nosel_4d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_4d) <- c("Row", "Column", "Value")
+nosel_4d = nosel_4d %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+#5d
+rc5da = read.csv("../Data/rc5da_abundance.csv", check.names = F)
+
+nosel_5d= as.matrix(rc5da)
+lower_5d <- lower.tri(nosel_5d)
+nosel_5d[!lower_5d] <- NA
+nosel_5d = melt(as.matrix(nosel_5d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_5d) <- c("Row", "Column", "Value")
+nosel_5d = nosel_5d %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+#6d
+rc6da = read.csv("../Data/rc6da_abundance.csv", check.names = F)
+
+nosel_6d= as.matrix(rc6da)
+lower_6d <- lower.tri(nosel_6d)
+nosel_6d[!lower_6d] <- NA
+nosel_6d = melt(as.matrix(nosel_6d), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_6d) <- c("Row", "Column", "Value")
+nosel_6d = nosel_6d %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+
+#1r
+rc1ra = read.csv("../Data/rc1ra_abundance.csv", check.names = F)
+
+nosel_1r= as.matrix(rc1ra)
+lower_1r <- lower.tri(nosel_1r)
+nosel_1r[!lower_1r] <- NA
+nosel_1r = melt(as.matrix(nosel_1r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_1r) <- c("Row", "Column", "Value")
+nosel_1r = nosel_1r %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+
+#2r
+rc2ra = read.csv("../Data/rc1ra_abundance.csv", check.names = F)
+
+nosel_2r= as.matrix(rc2ra)
+lower_2r <- lower.tri(nosel_2r)
+nosel_2r[!lower_2r] <- NA
+nosel_2r = melt(as.matrix(nosel_2r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_2r) <- c("Row", "Column", "Value")
+nosel_2r = nosel_2r %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+
+
+#3r
+rc3ra = read.csv("../Data/rc3ra_abundance.csv", check.names = F)
+
+nosel_3r= as.matrix(rc3ra)
+lower_3r <- lower.tri(nosel_3r)
+nosel_3r[!lower_3r] <- NA
+nosel_3r = melt(as.matrix(nosel_3r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_3r) <- c("Row", "Column", "Value")
+nosel_3r = nosel_3r %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+
+#4r
+rc4ra = read.csv("../Data/rc4ra_abundance.csv", check.names = F)
+
+nosel_4r= as.matrix(rc4ra)
+lower_4r <- lower.tri(nosel_4r)
+nosel_4r[!lower_4r] <- NA
+nosel_4r = melt(as.matrix(nosel_4r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_4r) <- c("Row", "Column", "Value")
+nosel_4r = nosel_4r %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+#5r
+rc5ra = read.csv("../Data/rc5ra_abundance.csv", check.names = F)
+
+nosel_5r= as.matrix(rc5ra)
+lower_5r <- lower.tri(nosel_5r)
+nosel_5r[!lower_5r] <- NA
+nosel_5r = melt(as.matrix(nosel_5r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_5r) <- c("Row", "Column", "Value")
+nosel_5r = nosel_5r %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+#6r
+rc6ra = read.csv("../Data/rc6ra_abundance.csv", check.names = F)
+
+nosel_6r= as.matrix(rc6ra)
+lower_6r <- lower.tri(nosel_6r)
+nosel_6r[!lower_6r] <- NA
+nosel_6r = melt(as.matrix(nosel_6r), varnames = c("Row", "Column"), value.name = "Value", na.rm = TRUE)
+colnames(nosel_6r) <- c("Row", "Column", "Value")
+nosel_6r = nosel_6r %>%  
+  mutate(
+    # Categorizar los valores
+    category = case_when(
+      Value > 0.95 ~ "histcont_displimit",
+      Value <= 0.95 & Value >= -0.95 ~ "eco_drift",
+      Value < -0.95 ~ "homog_disp"
+    ),
+    # Agregar columnas de porcentaje basadas en la nueva categoría
+    percentage_histocont_displimit = ifelse(category == "histcont_displimit", 100, 0),
+    percentage_eco_drift = ifelse(category == "eco_drift", 100, 0),
+    percentage_homog_disp = ifelse(category == "homog_disp", 100, 0)
+  )
+
+
+nosel1d = nosel_1d %>% mutate(pol="1_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel2d = nosel_2d %>% mutate(pol="2_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel3d = nosel_3d %>% mutate(pol="3_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel4d = nosel_4d %>% mutate(pol="4_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel5d = nosel_5d %>% mutate(pol="5_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel6d = nosel_6d %>% mutate(pol="6_d") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+
+nosel1r = nosel_1r %>% mutate(pol="1_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel2r = nosel_2r %>% mutate(pol="2_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel3r = nosel_3r %>% mutate(pol="3_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel4r = nosel_4r %>% mutate(pol="4_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel5r = nosel_5r %>% mutate(pol="5_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+nosel6r = nosel_6r %>% mutate(pol="6_r") %>% group_by(pol) %>% summarise_if(is.numeric, mean)
+
+
+noselection = rbind(nosel1d, nosel2d, nosel3d, nosel4d, nosel5d, nosel6d,
+                  nosel1r, nosel2r, nosel3r, nosel4r, nosel5r, nosel6r)
+
+noselection = noselection %>% mutate(noselection= percentage_histocont_displimit+percentage_eco_drift+percentage_homog_disp)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+all = selection %>% full_join(noselection, by = "pol")
+all= all %>% mutate(noselection_ok = noselection-selection) %>% 
+  mutate(percentage_histocont_displimit_ok = (percentage_histocont_displimit/100)*noselection_ok,
+         percentage_eco_drift_ok = (percentage_eco_drift/100)*noselection_ok,
+         percentage_homog_disp_ok = (percentage_homog_disp/100)*noselection_ok) %>% 
+  mutate(total=percentage_variable+percentage_homog+percentage_eco_drift_ok+percentage_homog_disp_ok+percentage_histocont_displimit_ok )
+
+
+data_plot = all %>% dplyr::select(
+  pol,
+  Selection_variable=percentage_variable,
+  Selection_Homogeneous=percentage_homog,
+  Ecological_drift=percentage_eco_drift_ok,
+  Homogenizing_dispersal=percentage_homog_disp_ok,
+  "Historical_cont/Dispersal_limit"=percentage_histocont_displimit_ok  ) %>% pivot_longer(cols = -pol, names_to = "Process", values_to = "Proportion") %>% separate("pol", into = c("Polygon", "Season"), remove =  F)
+
+data_plot$Season = factor(data_plot$Season, levels = c("d", "r"), labels = c("Dry", "Rainy"))
+data_plot$Polygon = factor(data_plot$Polygon, levels=c("1","2","3","4","5","6"), labels=c("P1", "P2", "P3", "P4", "P5", "P6"))
+
+library(ggh4x)
+library(ggpubr)
+bseason=ggbarplot(data = data_plot, x = "Season", y = "Proportion", fill = "Process", add = "mean",facet.by = "Season", size = 1)+facet_grid2(.~Season, scales = "free")+
+  scale_fill_manual(values = c("#008000", "#2ecc71", "#808000", "#800000", "#FF0000"))+ theme_grey()+
+    theme(legend.position="right")+
+  theme(axis.text = element_text(size=12),
+        axis.title =  element_text(size=14),
+        strip.text = element_text(size=12),
+        axis.text.x = element_blank(),
+        plot.title = element_text(size=8, face="bold")  )+ theme(
+                  strip.background = element_rect(
+     color="black", fill="black", size=1.5, linetype="solid"),
+     strip.text = element_text(colour = "white", face = "bold"),
+     legend.position = "none")+ylab("Proportion (%)")
+
+
+colors<-viridis::turbo(6, alpha = 1, begin = 0, end = 1, direction = 1)
+
+combos = data.frame(
+  Season=c(rep("Dry", 6), rep("Rainy", "6")),
+  Polygon=rep(paste0("P", 1:6),2)
+)
+combos = data.frame(
+  Polygon=c("P1", "P1", "P2", "P2", "P3", "P3", "P4", "P4", "P5", "P5", "P6", "P6"),
+  Season=c("Dry", "Rainy","Dry", "Rainy","Dry", "Rainy","Dry", "Rainy","Dry", "Rainy","Dry", "Rainy")
+)
+
+
+strip_background <- strip_nested(
+  text_x = elem_list_text(colour = "white", face = "bold"),
+  background_x =
+    elem_list_rect(
+      fill = c(
+    
+        # level2 colors
+        case_match(
+      unique(combos$Polygon),
+          "P1" ~ "#88CCEE" ,
+          "P2" ~ "#CC6677",
+          "P3" ~ "#DDCC77",
+          "P4" ~ "#117733",
+          "P5"~  "#332288" ,
+          "P6" ~ "#888888",
+          .default = "blue"),
+      # level1 colors
+        case_match(
+          combos$Season,
+          "Dry" ~ "#A16928",
+          "Rainy" ~ "#2887a1",
+          .default = "grey"
+        )
+      )
+    )
+)
+
+
+p=ggbarplot(data = data_plot, x = "Season", y = "Proportion", fill = "Process", add = "mean", facet.by = "Polygon")+
+  #scale_fill_manual(values = c("#008000", "#2ecc71", "#808000","#800000","#FF0000"))+
+      scale_fill_carto_d(name = "Process", palette = "Geyser") +
+theme_gray()+
+  facet_nested(.~Polygon,  scales = "free", strip = strip_background)+
+  ylab("Proportion (%)")+
+  theme_grey()+
+  theme(#axis.text.x = element_blank(), 
+        #axis.ticks.x = element_blank(),
+        strip.text.x = element_text(size = 14, face = "bold", color="white"),
+        strip.text.y = element_text(size = 16, face = "bold"),
+       axis.title = element_text(size = 14))+ theme(
+strip.background = element_rect(color="black", fill="black", size=0.7,linetype="solid"),
+     panel.border = element_rect(colour = "black", fill=NA, size=0.3),
+     axis.text.x = element_text(size = 10, colour = "black"  ),
+     strip.text.y = element_text(colour = "white", face = "bold"))+
+  xlab("Season, Polygon")
+
+ggsave("../Plots/process.png",width = 8, height = 6, dpi = 300, plot = p, device = "png")
+```
+
+
+### Test dispersal limitation
+
+- Loading packages
+```{r, warning=FALSE, message=FALSE}
+library(broom)
+library(geosphere)
+library(reshape2)
+source("../Scripts//functions_betadiv.R")
+
+```
+
+
+Calculating distances between points
+
+```{r, warning=FALSE, message=FALSE}
+coords<- read_csv("../Data/coord.csv")
+coords2=read.csv("../Data/coord_lluvi.csv")
+
+
+coords_mod=coords %>% mutate(SampleID=paste0(pol, Sitio, Transecto, "D")) %>% dplyr::select(
+    SampleID, Longitude, Latitude)
+
+
+coords_mod2=coords2 %>% mutate(SampleID=paste0(pol, Sitio, Transecto, "R")) %>% dplyr::select(
+    SampleID, Longitude, Latitude)  
+
+
+#distance<- distm(coords_mat)/1000
+#colnames(distance)<- rownames(coords_mat)
+#rownames(distance)<- rownames(coords_mat)
+#distance_complete<- distance
+#distance[upper.tri(distance)] <- NA 
+#distance_dm<-melt(as.matrix(distance), varnames = c(
+ # "SampleID.x", "SampleID.y")) %>% drop_na() %>% filter(!value==0)
+
+#BRAY-euclidean
+#dry
+otu_dry=abund_table[,match(coords_mod$SampleID, colnames(abund_table))]
+otu_dist_dry = vegdist(t(otu_dry), method = "bray")
+spatial_dist_dry=vegdist(coords_mod %>% column_to_rownames(var = "SampleID"), "euc") 
+mantel(otu_dist_dry,spatial_dist_dry)
+
+#rainy
+otu_rainy=abund_table[,match(coords_mod2$SampleID, colnames(abund_table))]
+otu_dist_rainy = vegdist(t(otu_rainy), method = "bray")
+spatial_dist_rainy=vegdist(coords_mod2 %>% column_to_rownames(var = "SampleID"), "euc") 
+mantel(otu_dist_rainy,spatial_dist_rainy)
+
+
+#BRAY-distance in km
+
+distance_dry<- distm(coords_mod %>% column_to_rownames(var = "SampleID"))/1000
+colnames(distance_dry)<- coords_mod$SampleID
+rownames(distance_dry)<- coords_mod$SampleID
+distance_complete_dry<- distance_dry
+distance_dry[upper.tri(distance_dry)] <- NA 
+distance_dm_dry<-melt(as.matrix(distance_dry), varnames = c(
+  "SampleID.x", "SampleID.y")) %>% drop_na() %>% filter(!value==0) %>% 
+  dplyr::rename(spatial=value)
+
+distance_otu_dry<-melt(as.matrix(otu_dist_dry), varnames = c(
+  "SampleID.x", "SampleID.y")) %>% drop_na() %>% filter(!value==0)%>% 
+  dplyr::rename(comm=value)
+
+
+mant1=mantel(otu_dist_dry,distance_complete_dry, method = "spearman")
+
+dat1= distance_dm_dry %>% inner_join(distance_otu_dry)
+fit1 <- lm(spatial ~ comm, data = dat1)
+pdry=dat1 %>% ggplot(aes(spatial,comm))+ geom_point() +
+  stat_smooth(method = "lm", col = "red")+
+  labs(title = paste(" Slope of lm=",signif(fit1$coef[[2]], 5),
+                     " r-mantel =",signif(mant1$statistic, 3),
+                     "p-value =", signif(mant1$signif, 3)))+
+  theme_grey() +
+  theme(
+    axis.text = element_text(colour = "black", size = 12),
+    axis.title = element_text(colour = "black", size = 18),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 18),
+    legend.position = "right",
+    legend.box = "vertical",
+    panel.border = element_rect(
+      colour = "black",
+      fill = NA,
+      size = 1),
+        plot.title = element_text(size=18),
+ aspect.ratio = 7 / 10)+xlab("Spatial Distance (km)")+
+                               ylab("Bray-curtis dissimilarity")
+
+
+
+#BRAY-distance in km
+
+distance_rainy<- distm(coords_mod2 %>% column_to_rownames(var = "SampleID"))/1000
+colnames(distance_rainy)<- coords_mod2$SampleID
+rownames(distance_rainy)<- coords_mod2$SampleID
+distance_complete_rainy<- distance_rainy
+distance_rainy[upper.tri(distance_rainy)] <- NA 
+distance_dm_rainy<-melt(as.matrix(distance_rainy), varnames = c(
+  "SampleID.x", "SampleID.y")) %>% drop_na() %>% filter(!value==0) %>% 
+  dplyr::rename(spatial=value)
+
+distance_otu_rainy<-melt(as.matrix(otu_dist_rainy), varnames = c(
+  "SampleID.x", "SampleID.y")) %>% drop_na() %>% filter(!value==0)%>% 
+  dplyr::rename(comm=value)
+
+
+mant2=mantel(otu_dist_rainy,distance_complete_rainy, method = "spearman")
+
+dat2= distance_dm_rainy %>% inner_join(distance_otu_rainy) %>% filter(!comm < 0.3)
+
+fit2 <- lm(spatial ~ comm, data = dat2)
+
+prainy=dat2 %>% ggplot(aes(spatial,comm))+ geom_point() +
+  stat_smooth(method = "lm", col = "red")+
+  labs(title = paste(" Slope of lm=",signif(fit2$coef[[2]], 5),
+                     " r-mantel =",signif(mant2$statistic, 3),
+                     "p-value =", signif(mant2$signif, 3))) +
+  theme_grey() +
+  theme(
+    axis.text = element_text(colour = "black", size = 12),
+    axis.title = element_text(colour = "black", size = 18),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 18),
+    legend.position = "right",
+    legend.box = "vertical",
+    panel.border = element_rect(
+      colour = "black",
+      fill = NA,
+      size = 1),
+    plot.title = element_text(size=18),
+ aspect.ratio = 7 / 10)+xlab("Spatial Distance (km)")+
+                               ylab("Bray-curtis dissimilarity")
+
+
+library(cowplot)
+
+plot<- plot_grid(pdry,prainy+ylab(""),
+                 labels = c("A", "B"),
+                 label_size = 20,
+                  ncol = 2)
+
+ggsave('../Plots/spatial.png', width = 15, height = 7, dpi = 300, plot =plot)
+
+
+```
+
+

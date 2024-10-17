@@ -11,12 +11,12 @@ library(betapart)
 library(qiime2R)
 library(vegan)
 library(colorRamps)
-library(ggoubr)
+library(ggpubr)
 library(ggordiplots)
 
-table<- read_qza("Data/table_SMOQ_rar.qza")$data
+table<- read_qza("../Data/table_SMOQ_rar.qza")$data
 
-metadata<- read.delim("Data/its_map.txt")
+metadata<- read.delim("../Data/its_map.txt")
 
 
 #convrt data
@@ -82,7 +82,7 @@ data<- data.frame(Poligono=c("P1", "P2", "P3", "P4", "P5", "P6"),
                   beta=rep(0.85,6)) %>% inner_join(g, by = "Poligono")
 library(ggpubr)
 t<-ggboxplot(data = table_turns, x = "Poligono", y="beta", fill="Poligono")+
-  scale_fill_viridis_d(option ="turbo", name="Polygon")+#color of points 
+    scale_fill_carto_d(name = "Polygons ", palette = "Safe") +
   theme_grey() +theme(axis.text = element_text(colour = "black", size = 14),
                      axis.title = element_text(colour = "black", size = 16),
                      legend.text = element_text(size = 10),
@@ -99,7 +99,7 @@ t<-ggboxplot(data = table_turns, x = "Poligono", y="beta", fill="Poligono")+
   stat_summary(fun.y=mean, geom="point", shape=23, size=4, color="black", fill="white")
   
 t
-#ggsave('Plots/temporal_turnover_jaccard.png', width =8, height = 6, dpi = 300, plot =t)
+ggsave('../Plots/temporal_turnover_jaccard.png', width =8, height = 6, dpi = 300, plot =t)
 
 ```
 

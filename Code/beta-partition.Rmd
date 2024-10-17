@@ -48,44 +48,51 @@ jnes<- betadisper(jne,factor(env1$Poligono))
 library(tidyverse)
 library(ggordiplots)
 
-function_plot_beta<- function(x,env){
+function_plot_beta <- function(x, env) {
   y <- gg_ordiplot(x, groups = env$Poligono, hull = FALSE, spiders = TRUE, 
                    ellipse = FALSE, plot = FALSE, label = TRUE)
+  
   xlabs <- y$plot$labels$x
   ylabs <- y$plot$labels$y
-  z<-ggplot()+ geom_point(data = y$df_ord %>% rownames_to_column(var="SampleID") %>% 
-                            inner_join(env),
-                          aes(x = x, y = y, color = Group, shape=Season), size = 3) + 
-    xlab(xlabs) +  ylab(ylabs)+
+  
+  z <- ggplot() + 
+    geom_point(data = y$df_ord %>% rownames_to_column(var = "SampleID") %>% 
+                 inner_join(env),
+               aes(x = x, y = y, color = Group, shape = Season), size = 3) + 
+    xlab(xlabs) +  
+    ylab(ylabs) +
     geom_segment(data = y$df_spiders, aes(x = cntr.x, xend = x, y = cntr.y, yend = y, color = Group), 
                  show.legend = FALSE)
   
-  a<-z+geom_label(
-    data = y$df_mean.ord,
-    aes(x = x, y = y, label=Group))+guides(
-      color=guide_legend(title="Polygon"))+theme_linedraw() +
-    geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  a <- z + 
+    geom_label(data = y$df_mean.ord, aes(x = x, y = y, label = Group)) +
+    guides(color = guide_legend(title = "Polygon")) +
+    theme_linedraw() +
+    geom_vline(xintercept = 0, linetype = 2) +  
     geom_hline(yintercept = 0, linetype = 2) +
-    theme_linedraw()+
-    scale_fill_viridis_d(option ="turbo", name="Polygon")+#color of points 
-    scale_color_viridis_d(option ="turbo" )+#color of points 
+    scale_color_carto_d(name = "Polygons: ", palette = "Safe") +
+    theme_gray() +
     theme(axis.text = element_text(colour = "black", size = 12),
           axis.title = element_text(colour = "black", size = 12),
           legend.text = element_text(size = 10),
           legend.title = element_text(size = 12), 
           legend.position = "right", 
           legend.box = "vertical",
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank())+
-    theme(plot.margin = unit(c(0, 0, 0, 0), "cm"))+theme(aspect.ratio =3/10)
+          plot.margin = unit(c(0, 0, 0, 0), "cm"),
+          panel.background = element_rect(fill = "#F2F4F4", colour = "#F2F4F4", size = 0.5, linetype = "solid"),
+          panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), 
+          panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"),
+          panel.border = element_rect(colour = "black", fill = NA, size = 1),
+          aspect.ratio = 7 / 10)
+  
   return(a)
 }
- 
+
 
 
 #jaccard
 plot_jac<-  function_plot_beta(jacs, env1)
-plot_jac=plot_jac+ guides(colour = guide_legend(nrow = 1, title = "Polygon"),
+plot_jac=plot_jac+ guides(colour = guide_legend(nrow = 1, title = "Polygons"),
                           shape = guide_legend(nrow = 1) )+theme(legend.position = "top")
 
 #turnover
@@ -101,9 +108,9 @@ heads=betapart::beta.multi(table_presabs, index.family = "jaccard")
 
 library(cowplot)
 leg<- get_legend(plot_jac)
-a<-plot_grid(plot_jac+theme(legend.position = "none")+ylab("DIM2")+xlab("")+theme(aspect.ratio =8/10)+ggtitle(paste("Global Jaccard dissimilarity =", round(heads$beta.JAC[1], digits = 3))),  
-             plot_turn+theme(legend.position = "none")+ylab("DIM2")+xlab("")+theme(aspect.ratio =8/10)+ggtitle(paste("Global Turnover component =", round(heads$beta.JTU[1], digits = 3))),  
-             plot_nes+theme(legend.position = "none")+ylab("DIM2")+xlab("DIM1")+theme(aspect.ratio =8/10)+ggtitle(paste("Global  Nestedness component =", round(heads$beta.JNE[1], digits = 3))), 
+a<-plot_grid(plot_jac+theme(legend.position = "none")+ylab("DIM2")+xlab("")+theme(aspect.ratio =6/10)+ggtitle(paste("Global Jaccard dissimilarity =", round(heads$beta.JAC[1], digits = 3))),  
+             plot_turn+theme(legend.position = "none")+ylab("DIM2")+xlab("")+theme(aspect.ratio =6/10)+ggtitle(paste("Global Turnover component =", round(heads$beta.JTU[1], digits = 3))),  
+             plot_nes+theme(legend.position = "none")+ylab("DIM2")+xlab("DIM1")+theme(aspect.ratio =6/10)+ggtitle(paste("Global  Nestedness component =", round(heads$beta.JNE[1], digits = 3))), 
              ncol = 1, align = "hv", labels = c("A", "B", "C"), label_x = 0.1)
 b= plot_grid(leg,a, ncol = 1, rel_heights = c(0.2,1))
 

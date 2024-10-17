@@ -1,0 +1,155 @@
+---
+title: "Physico-chemicals"
+output: html_document
+date: "2024-05-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+- Loading packages and data    
+```{r, message=FALSE, warning=FALSE}
+library(reshape2)
+library(picante)
+library(readxl)
+library(tidyverse)
+library(pgirmess)
+library(car)
+library(ggplot2)
+library(ggpubr)
+dry<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_secas_all") %>% mutate(Season="Dry")
+
+# select characteristics in both datasets
+drys<- dry %>% dplyr::select( Poligono,Sitio,Transecto,Season,K, Ca, Mg, Fe, Cu, Mn, WHC, EC=CONDUC, Clay=ARCILLA, Silt=LIMO)
+
+env_season<- drys %>% mutate(sea=c(rep("D",36))) %>% unite("SampleID", c("Poligono", "Sitio", "Transecto", "sea"),remove = F, sep = "")
+
+env_season$Poligono<- factor(env_season$Poligono, levels = c(1,2,3,4,5,6),
+                             labels = c("P1", "P2", "P3", "P4", "P5", "P6"))
+env_season$Season<- factor(env_season$Season)
+
+env_season<-env_season %>%  unite("interact", c("Poligono", "Season"), remove = F)
+vars= c("K", "Ca", "Mg","Mn", "EC", "Fe", "Cu",  "WHC",  "Clay", "Silt")
+
+df <-env_season  %>% column_to_rownames(var="SampleID") %>% dplyr::select(vars)
+dfs=data.frame(scale(df, center = T, scale = T)) #standardize environmental data
+
+df$Poligono<-NA
+df$Poligono<-env_season$Poligono
+df$Season<-env_season$Season
+
+dfs$Poligono<-NA
+dfs$Poligono<-env_season$Poligono
+
+#melted_df=melt(dfs, id="Poligono")
+#melted_df=melt(df, id=c("Poligono", "Season"))
+#mean_table=Rmisc::summarySE(melted_df, measurevar = "value", groupvars=c("variable","Poligono", "Season"), na.rm = T)
+
+# checking collinearity
+cor.table(na.omit(dfs[,1:4]))
+```
+
+
+
+
+
+```{r}
+#linear models and normality and heterogenity test
+model1<- lm(K ~ Poligono, data = env_season)
+car::leveneTest(K ~ Poligono, data = env_season)
+plot(model1, which = 2)
+
+model2<- lm(Ca ~ Poligono, data = env_season)
+car::leveneTest(Ca ~ Poligono, data = env_season)
+plot(model2, which = 2)
+
+model3<- lm(Mg ~ Poligono, data = env_season)
+car::leveneTest(Mg ~ Poligono*Season, data = env_season)
+plot(model3, which = 2)
+
+model4<- lm(Fe ~ Poligono, data = env_season)
+car::leveneTest(Fe ~ Poligono, data = env_season)
+plot(model4, which = 2)
+
+model5<- lm(Cu ~ Poligono, data = env_season)
+car::leveneTest(Cu ~ Poligono, data = env_season)
+plot(model5, which = 2)
+
+model6<- lm(Mn ~ Poligono, data = env_season)
+car::leveneTest(Mn ~ Poligono, data = env_season)
+plot(model6, which = 2)
+
+model7<- lm(WHC ~ Poligono, data = env_season)
+car::leveneTest(WHC ~ Poligono, data = env_season)
+plot(model7, which = 2)
+
+model8<- lm(EC ~ Poligono, data = env_season)
+car::leveneTest(EC ~ Poligono, data = env_season)
+plot(model8, which = 2)
+
+
+model9<- lm(Clay ~ Poligono, data = env_season)
+car::leveneTest(Clay ~ Poligono, data = env_season)
+plot(model9, which = 2)
+
+model10<- lm(Silt ~ Poligono, data = env_season)
+car::leveneTest(Silt ~ Poligono, data = env_season)
+plot(model10, which = 2)
+```
+
+
+```{r}
+# Plot the temporal trends of the selected environmental variables over time
+
+melted_df=melt(df, id=c("Poligono", "Season"))
+
+mean=Rmisc::summarySE(melted_df, measurevar = "value", groupvars=c("Poligono","variable", "Season"), na.rm = T)
+mean$variable=factor(mean$variable, levels = c("K", "Ca", "Mg","Mn", "EC", "Fe", "Cu",  "WHC",  "Clay", "Silt"))
+
+conservation_status <- c(
+  K = "K (mg/Kg)",
+Ca = "Ca (mg/Kg)",
+  Mg = "Mg (mg/Kg)",
+  Mn = "Mn (mg/Kg)",
+EC = "EC  (dS/m)",
+Fe= "Fe (mg/Kg)",
+Cu = "Cu (mg/Kg)",
+  WHC= "WHC (g/Kg) ",
+  Clay = "Clay (%)",
+Silt= "Silt (%)"
+
+
+)
+
+library(plyr)
+mean$conservation2 <- plyr::revalue(mean$variable, conservation_status)
+melted_df$conservation2 <- plyr::revalue(melted_df$variable, conservation_status)
+
+
+
+fq<-ggline(melted_df, x="Poligono", y="value",
+       linetype="Season", facet.by = "conservation2", add = "mean_se")+
+  facet_wrap(conservation2~., scales = "free_y", ncol = 5)+
+  labs(x="Polygon",y="Mean±SD")+
+  theme_grey()+
+    theme(legend.position="right")+
+  theme(axis.text = element_text(size=12),
+        axis.title =  element_text(size=14),
+        strip.text = element_text(size=12),
+        plot.title = element_text(size=8, face="bold")  )+ theme(
+                  strip.background = element_rect(
+     color="black", fill="black", size=1.5, linetype="solid"),
+     strip.text = element_text(colour = "white", face = "bold"),
+     legend.position = "none")+
+  stat_compare_means(method = "anova", label = "p.format", label.x = 2.5)
+fq
+
+ggsave('../Plots/fisico-season-mod2.png', width =13, height = 6, dpi = 300, plot =fq)
+#quartz.save("meanplot.pdf", type = "pdf") 
+#quartz.save("meanplot.tiff", type = "tiff")
+
+```
+
+
+

@@ -186,6 +186,7 @@ multcomp::cld(object = emmeans4$emmeans, Letters=letters)
 # Plot the temporal trends of the selected environmental variables over time
 df$Season<-NA
 df$Season<-env_season$Season
+df$Season = factor(df$Season, levels = c("Dry", "Wet"), labels = c("Dry", "Rainy"))
 melted_df=melt(df, id=c("Poligono", "Season"))
 
 mean=Rmisc::summarySE(melted_df, measurevar = "value", groupvars=c("Poligono","variable", "Season"), na.rm = T)

@@ -13,10 +13,10 @@ library(readxl)
 library(reshape2)
 library(ggpubr)
 library(ggh4x)
-
+library(rcartocolor)
 
 abund_table=read_qza("../Data/table_SMOQ_rar.qza")$data #
-abund_table=read_qza("../Data/table_SMOQ.qza")$data #
+#abund_table=read_qza("../Data/table_SMOQ.qza")$data #
 
 
 dry<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_secas_all") %>% mutate(Season="Dry")
@@ -190,12 +190,16 @@ summary_se3=summarySE(rcc_dmp, measurevar = "value", groupvars = "factor")
 betadiv=rcc_dmp %>% separate(factor, c("Pol", "Season"))
 
 
-colors<-viridis::turbo(6, alpha = 1, begin = 0, end = 1, direction = 1)
+#colors<-viridis::turbo(6, alpha = 1, begin = 0, end = 1, direction = 1)
+colors= rcartocolor::carto_pal(n = 6, name = "Safe")
 
 strip <- strip_themed(background_x = elem_list_rect(fill = colors))
 
-plot<-ggerrorplot(betadiv, x="Pol", y="value", desc_stat = "mean_se", 
-            color="Season",facet.by = "Pol", size = 1,
+betadiv$Season = factor(betadiv$Season, levels = c("dry", "wet"), labels = c("Dry", "Rainy"))
+
+plot<-ggerrorplot(betadiv, x="Season", y="value", desc_stat = "mean_se", 
+                  color = "Season",
+          facet.by = "Pol", size = 1, 
             error.plot = "errorbar",            # Change error plot type
             add = "mean")+facet_grid2(.~Pol, scales = "free", strip = strip)+
   geom_hline(yintercept = 0.95, linetype=2)+
@@ -216,113 +220,38 @@ plot<-ggerrorplot(betadiv, x="Pol", y="value", desc_stat = "mean_se",
                                          name=" ‘stochastic’ range (−0.95 < βRC < + 0.95)",
                                          labels = c("Deterministic \n more similar", 
                                                     "Deterministic \n dissimilar" )))+
-  scale_color_manual(values = c("#FE922AFF","#4490FEFF"),labels=c("Secas", "Lluvias"))+theme_grey()+
-  theme(axis.text.x = element_blank(), 
-        axis.ticks.x = element_blank(),
+  scale_color_manual(values = c("#A16928" ,"#2887a1"),labels=c("Dry", "Rainy"))+theme_grey()+
+  theme(axis.text.x = element_text(
+    size = 10, colour = "black"  ), 
+        #axis.ticks.x = element_blank(),
         strip.text.x = element_text(size = 14, face = "bold", color="white"),
         strip.text.y = element_text(size = 16, face = "bold"),
+         panel.border = element_rect(colour = "black", fill=NA, size=0.3),
        axis.title = element_text(size = 14))+ theme(
                   strip.background.y = element_rect(
      color="black", fill="black", size=1.5, linetype="solid"),
+     strip.background = element_rect(color="black", fill="black", size=0.7, linetype="solid"),
      strip.text.y = element_text(colour = "white", face = "bold"))+
-  xlab("Polygon")
+  xlab("Season,Polygon")
 plot
 ggsave("../Plots/null-models-otu-rar.png",width = 8, height = 6, dpi = 300, plot = plot, device = "png")
 ```
 
-
 ```{r}
-source("../Scripts/raup_crick_abundance.R")
-library(phyloseq)
-library(picante)
-library(ape)
-rc1da=raup_crick_abundance(abund_table1d, plot_names_in_col1 = F, reps = 999,  set_all_species_equal = F)
-rc2da=raup_crick_abundance(abund_table2d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
-rc3da=raup_crick_abundance(abund_table3d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
-rc4da=raup_crick_abundance(abund_table4d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
-rc5da=raup_crick_abundance(abund_table5d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
-rc6da=raup_crick_abundance(abund_table6d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+write.csv(rc1d, "../Data/rc1d.csv")
+write.csv(rc2d, "../Data/rc2d.csv")
+write.csv(rc3d, "../Data/rc3d.csv")
+write.csv(rc4d, "../Data/rc4d.csv")
+write.csv(rc5d, "../Data/rc5d.csv")
+write.csv(rc6d, "../Data/rc6d.csv")
 
-rc1ra=raup_crick_abundance(abund_table1r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
-rc2ra=raup_crick_abundance(abund_table2r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
-rc3ra=raup_crick_abundance(abund_table3r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
-rc4ra=raup_crick_abundance(abund_table4r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
-rc5ra=raup_crick_abundance(abund_table5r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
-rc6ra=raup_crick_abundance(abund_table6r, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
+write.csv(rc1r, "../Data/rc1r.csv")
+write.csv(rc2r, "../Data/rc2r.csv")
+write.csv(rc3r, "../Data/rc3r.csv")
+write.csv(rc4r, "../Data/rc4r.csv")
+write.csv(rc5r, "../Data/rc5r.csv")
+write.csv(rc6r, "../Data/rc6r.csv")
 
-library(reshape2)
-rcc1da=subset(melt(as.matrix(rc1da)),value!=0)
-rcc2da=subset(melt(as.matrix(rc2da)),value!=0)
-rcc3da=subset(melt(as.matrix(rc3da)),value!=0)
-rcc4da=subset(melt(as.matrix(rc4da)),value!=0)
-rcc5da=subset(melt(as.matrix(rc5da)),value!=0)
-rcc6da=subset(melt(as.matrix(rc6da)),value!=0)
-
-rcc1ra=subset(melt(as.matrix(rc1ra)),value!=0)
-rcc2ra=subset(melt(as.matrix(rc2ra)),value!=0)
-rcc3ra=subset(melt(as.matrix(rc3ra)),value!=0)
-rcc4ra=subset(melt(as.matrix(rc4ra)),value!=0)
-rcc5ra=subset(melt(as.matrix(rc5ra)),value!=0)
-rcc6ra=subset(melt(as.matrix(rc6ra)),value!=0)
-
-rcc1da$factor="P1-dry"
-rcc2da$factor="P2-dry"
-rcc3da$factor="P3-dry"
-rcc4da$factor="P4-dry"
-rcc5da$factor="P5-dry"
-rcc6da$factor="P6-dry"
-
-rcc1ra$factor="P1-wet"
-rcc2ra$factor="P2-wet"
-rcc3ra$factor="P3-wet"
-rcc4ra$factor="P4-wet"
-rcc5ra$factor="P5-wet"
-rcc6ra$factor="P6-wet"
-rcc_dmpa=rbind(rcc1ra, rcc2ra,rcc3ra,rcc4ra,rcc5ra,rcc6ra,
-              rcc1da, rcc2da, rcc3da, rcc4da, rcc5da, rcc6da)
-
-summary_se4=summarySE(rcc_dmpa, measurevar = "value", groupvars = "factor")
-
-library(tidyverse)
-library(ggpubr)
-# Let's save the summary_se object
-#write.csv(summary_se, "./RC_bact.csv")
-betadiva=rcc_dmpa %>% separate(factor, c("Pol", "Season"))
-a<-ggerrorplot(betadiva, x="Pol", y="value", desc_stat = "mean_se", 
-            color="Season",facet.by = "Pol", size = 1,
-            error.plot = "errorbar",            # Change error plot type
-            add = "mean")+facet_grid2(.~Pol, scales = "free", strip = strip)+
-  geom_hline(yintercept = 0.95, linetype=2)+
-  geom_hline(yintercept = -0.95, linetype=2)+theme_linedraw()+
-  theme(#legend.position="none",
-    #panel.border = element_blank(), 
-    panel.spacing.x = unit(0.3,"line"),
-    axis.line.x = element_line(colour = "black"),
-    axis.line.y = element_line(colour = "black"))+ 
-  stat_compare_means(aes(group = Season), label = "p.signif")+
-  ylab("Abundance-based (Raup-Crick) beta-diversity with Bray-Curtis dissimilarity (±SE)")+
-  theme(axis.title.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.text.x = element_blank())+
-  scale_y_continuous(breaks = c(-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1),
-                     sec.axis = sec_axis(~.,
-                                         breaks = c(-0.95,0.95),
-                                         name=" 'Drift range (−0.95 < βRC < + 0.95)'",
-                                         labels = c("Homogenizing dispersal", 
-                                                    "Dispersal limitation or\n historical contigency" )))+
-  scale_color_manual(values = c("#FE922AFF","#4490FEFF"),labels=c("Secas", "Lluvias"))+theme_grey()+
-  theme(axis.text.x = element_blank(), 
-        axis.ticks.x = element_blank(),
-        strip.text.x = element_text(size = 14, face = "bold", color="white"),
-        strip.text.y = element_text(size = 16, face = "bold"),
-       axis.title = element_text(size = 14))+ theme(
-                  strip.background.y = element_rect(
-     color="black", fill="black", size=1.5, linetype="solid"),
-     strip.text.y = element_text(colour = "white", face = "bold"))+
-    xlab("Polygon")
-
-a
-ggsave("Plot/null-abund-otus.png",width = 8, height = 5, dpi = 300, plot = a, device = "png")
 
 
 

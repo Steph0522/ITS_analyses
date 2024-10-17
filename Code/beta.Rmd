@@ -16,7 +16,8 @@ library(ALDEx2)
 
 #taxonomys
 taxa<- read_qza("../Data/taxonomy_SMOQ_ver10.qza")$data
-table<- read_qza("../Data/table_SMOQ.qza")$data
+table<- read_qza("../Data/table_SMOQ_filt.qza")$data
+
 
 set.seed(124)
 
@@ -65,154 +66,462 @@ permdisp2
 titles<- paste0("adonis:", " Polygon, F=", round(perm$F[1], digits = 2), ", p-value=", round(perm$`Pr(>F)`[1], digits=3), ";", " Season, F=", round(perm$F[2], digits = 2), ", p-value=", round(perm$`Pr(>F)`[2], digits=3), ";", " \nPolygon*Season, F=", round(perm$F[3], digits = 2), ", p-value=", round(perm$`Pr(>F)`[3], digits=3))
 
 
-z<-ggplot()+ geom_point(data = y$df_ord %>% rownames_to_column(var="SampleID") %>% 
-                            inner_join(metadata1),
-                        aes(x = x, y = y, color = Group, shape=Season), size = 4) + 
-  xlab("PC1") + 
- ylab("PC2")+
-  geom_segment(data = y$df_spiders, aes(x = cntr.x, xend = x, y = cntr.y, yend = y, color = Group), 
-                 show.legend = FALSE)+
-      #geom_label(
-    #data = y$df_mean.ord,
-    #aes(x = x, y = y, label=Group), 
+
+z <-  ggplot() + geom_point(
+    data = y$df_ord %>% rownames_to_column(var = "SampleID") %>%
+      inner_join(metadata1),
+    aes(
+      x = x,
+      y = y,
+      color = Group,
+      shape = Season
+    ),
+    size = 4
+  ) +
+  xlab("PC1") +
+  ylab("PC2") +
+  geom_segment(
+    data = y$df_spiders,
+    aes(
+      x = cntr.x,
+      xend = x,
+      y = cntr.y,
+      yend = y,
+      color = Group
+    ),
+    show.legend = FALSE
+  ) +
+  #geom_label(
+  #data = y$df_mean.ord,
+  #aes(x = x, y = y, label=Group),
   #  label.padding = unit(0.15, "lines"),label.size = 0.4  )+
-  guides(
-    color=guide_legend(title="Sites"))+theme_linedraw() +
-    geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
-    geom_hline(yintercept = 0, linetype = 2) +
-    theme_linedraw()+
-    scale_fill_viridis_d(option ="turbo", name="Poligono")+#color of points 
-    scale_color_viridis_d(option ="turbo" )+#color of points 
-      geom_text(data=data.frame(pca$rotation) %>%   #arrows
-                                rownames_to_column(var = "Feature.ID")%>%  
-                                mutate(a=sqrt(PC1^2+PC2^2)) %>% # calculate the distance from the origin
-                                top_n(5, a) %>% #keep 10 furthest away points
-                                mutate(PC1=PC1*600, PC2=PC2*600)%>% left_join(
-                                  taxa)%>% dplyr::select(
-                                    Taxon, PC1, PC2, Feature.ID)%>%
-                                mutate_at(
-                                  c("Taxon"), ~str_replace(
-                                    .,";s__unidentified", ""))%>%
-                                mutate_at(
-                                  c("Taxon"), ~str_replace(
-                                    .,";g__unidentified", "")) %>% separate(Taxon, c(
-  "Domain", "Phylum", "Class", "Order", "Family", "Genus", "Specie"), sep = ";") %>% mutate_at(
-    c("Genus"), str_extract, "[^_]+$") %>% mutate(
-      Genus=case_when(
-      Genus =="sedis" ~"",
-      TRUE~as.character(Genus))),
-                      aes(x=PC1, y=PC2, label= Genus),
-                             # segment.colour = NA,
-               col = 'black', fill= "#EEEEEE",
-                              fontface="italic", 
-               label.r = unit(0.1, "cm"),
-               size=4, 
-               nudge_y = 0.25,nudge_x = 0.25,
-               label.padding = unit(0.05, "cm"))+theme_grey()+
-  theme(axis.text = element_text(colour = "black", size = 12),
-          axis.title = element_text(colour = "black", size = 12),
-          legend.text = element_text(size = 10),
-          legend.title = element_text(size = 12), 
-          legend.position = "right", 
-          legend.box = "vertical",
-            panel.border = element_rect(colour = "black", fill=NA, size=1))+
-  ggtitle(titles)+ theme(
-  panel.background = element_rect(fill = "#F2F4F4",
-                                colour = "#F2F4F4",
-                                size = 0.5, linetype = "solid"),
-  panel.grid.major = element_line(size = 0.5, linetype = 'solid',
-                                colour = "white"), 
-  panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
-                                colour = "white")
-  )
+  guides(color = guide_legend(title = "Sites")) + theme_linedraw() +
+  geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_linedraw() +
+  #scale_fill_viridis_d(option ="turbo", name="Poligono")+#color of points
+  #scale_color_viridis_d(option ="turbo" )+#color of points
+  scale_color_carto_d(name = "Polygons: ", palette = "Safe") +
+  geom_text(
+    data = data.frame(pca$rotation) %>%   #arrows
+      rownames_to_column(var = "Feature.ID") %>%
+      mutate(a = sqrt(PC1 ^ 2 + PC2 ^ 2)) %>% # calculate the distance from the origin
+      top_n(5, a) %>% #keep 10 furthest away points
+      mutate(PC1 = PC1 * 600, PC2 = PC2 * 600) %>% left_join(taxa) %>% dplyr::select(Taxon, PC1, PC2, Feature.ID) %>%
+      mutate_at(c("Taxon"), ~ str_replace(., ";s__unidentified", "")) %>%
+      mutate_at(c("Taxon"), ~ str_replace(., ";g__unidentified", "")) %>% separate(
+        Taxon,
+        c(
+          "Domain",
+          "Phylum",
+          "Class",
+          "Order",
+          "Family",
+          "Genus",
+          "Specie"
+        ),
+        sep = ";"
+      ) %>% mutate_at(c("Genus"), str_extract, "[^_]+$") %>% mutate(Genus = case_when(
+        Genus == "sedis" ~ "",
+        TRUE ~ as.character(Genus)
+      )),
+    aes(x = PC1, y = PC2, label = Genus),
+    # segment.colour = NA,
+    col = 'black',
+    fill = "#EEEEEE",
+    fontface = "italic",
+    label.r = unit(0.1, "cm"),
+    size = 4,
+    check_overlap = T,
+    nudge_y = 0.25,
+    nudge_x = 0.25,
+    label.padding = unit(0.05, "cm")
+  ) + theme_grey() +
+  theme(
+    axis.text = element_text(colour = "black", size = 12),
+    axis.title = element_text(colour = "black", size = 12),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right",
+    legend.box = "vertical",
+    panel.border = element_rect(
+      colour = "black",
+      fill = NA,
+      size = 1
+    )
+  ) +
+  ggtitle(titles) + theme(
+    panel.background = element_rect(
+      fill = "#F2F4F4",
+      colour = "#F2F4F4",
+      size = 0.5,
+      linetype = "solid"
+    ),
+    panel.grid.major = element_line(
+      size = 0.5,
+      linetype = 'solid',
+      colour = "white"
+    ),
+    panel.grid.minor = element_line(
+      size = 0.25,
+      linetype = 'solid',
+      colour = "white"
+    )
+  ) +
+  theme(aspect.ratio = 7 / 10)
+
           #panel.grid.major = element_blank(),
           #panel.grid.minor = element_blank())
 
 
-ggsave('../Plots/pca_otus.png', width =8, height = 6, dpi = 300, plot =z)
+ggsave('../Plots/pca_otus_filt.png', width =8, height = 6, dpi = 300, plot =z)
 
 
 ```
 
 ```{r}
-ord<- read_qza("../Data/ordination_SMOQ_rar.qza")$data
-metadata1<- as.data.frame(ord$Vectors)  %>% 
-    inner_join(metadata)
 
-source("../Scripts/gg_ordiplots3.R")
+nmds1=metaMDS(t(aldex.clr.transform@reads), distance = "aitchison",trymax = 500, k = 2)
 
-y1<-gg_ordiplot3(ord, groups = metadata1$Poligono, groups2 = metadata1$Season,
-                            spiders = T, plot = F, scaling = 3)
-  
-xlab <- y1$plot$labels$x
-ylab <- y1$plot$labels$y
-  
-z<-ggplot()+ geom_point(data = y1$df_ord %>% rownames_to_column(var="SampleID") %>% 
-                            inner_join(metadata1),
-                        aes(x = x, y = y, color = Group, shape=Season), size = 3) + 
- xlab(xlab) + 
-ylab(ylab)+
-  geom_segment(data = y1$df_spiders,
-               aes(x = cntr.x, xend = x, y = cntr.y, yend = y, color = Group), 
-                 show.legend = FALSE)+
-
-  guides(
-    color=guide_legend(title="Sites"))+theme_linedraw() +
-    geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
-    geom_hline(yintercept = 0, linetype = 2) +
-    theme_linedraw()+
-    scale_fill_viridis_d(option ="turbo", name="Poligono")+#color of points 
-    scale_color_viridis_d(option ="turbo" )+#color of points 
-    theme(axis.text = element_text(colour = "black", size = 12),
-          axis.title = element_text(colour = "black", size = 12),
-          legend.text = element_text(size = 10),
-          legend.title = element_text(size = 12), 
-          legend.position = "right", 
-          legend.box = "vertical",
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank())+
-    geom_text(data=data.frame(ord$Species) %>%   #arrows
-                              dplyr::rename( "Feature.ID"="FeatureID")%>%  
-                                mutate(a=sqrt(PC1^2+PC2^2)) %>% # calculate the distance from the origin
-                                top_n(5, a) %>% #keep 10 furthest away points
-                                mutate(PC1=PC1*.8, PC2=PC2*.8)%>% left_join(
-                                  taxa)%>% dplyr::select(
-                                    Taxon, PC1, PC2, Feature.ID)%>%
-                                mutate_at(
-                                  c("Taxon"), ~str_replace(
-                                    .,";s__unidentified", ""))%>%
-                                mutate_at(
-                                  c("Taxon"), ~str_replace(
-                                    .,";g__unidentified", "")) %>% separate(Taxon, c(
-  "Domain", "Phylum", "Class", "Order", "Family", "Genus", "Specie"), sep = ";") %>% mutate_at(
-    c("Genus"), str_extract, "[^_]+$") ,
-                              aes(x=PC1, y=PC2, label= Genus),
-                             # segment.colour = NA,
-               col = 'black', fill= "#EEEEEE",
-                              fontface="italic", 
-               label.r = unit(0.1, "cm"),
-               size=4, 
-               nudge_y = 0.25,nudge_x = 0.25,
-               label.padding = unit(0.05, "cm"))
-
-ggsave('../Plots/pca_compo_otus_rar.png', width =8, height = 6, dpi = 300, plot =z)
+nmds11= nmds1 %>%  
+  vegan:::scores.metaMDS(display = "sites") %>%
+  as_tibble(., rownames = "sample")%>%
+  left_join(metadata, by = join_by(sample == SampleID)) %>%
+  group_by(Poligono, Season) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup()
 
 
-aldex.clr.transform.datas<- read_qza("../Data/distance_SMOQ_rar.qza")$data
+set.seed(124)
 
-tab<-reshape2::melt(as.matrix(aldex.clr.transform.datas), varnames = c("row", "col")) %>% dplyr::rename("SampleID"="row") %>% inner_join(metadata) %>% slice(1:72)
-library(vegan)
+tab<-aldex.clr.transform@reads %>% t() %>% as.data.frame() %>% rownames_to_column(
+    var = "SampleID") %>% inner_join(metadata)
 perm<- how(nperm = 999)
-perm<-adonis2(aldex.clr.transform.datas~Poligono*Season, data = tab, method = 
-                  "euclidian", permutations =perm)
-print(perm)
+perm<-adonis2(t(aldex.clr.transform@reads) ~Poligono*Season, data = tab, method = 
+                  "aitchison", permutations =perm)
+perm
  
-mat<- dist(aldex.clr.transform.datas, method = "euclidean")
+mat<- vegdist(t(aldex.clr.transform@reads), method = "aitchison")
 permdisp<-betadisper(mat, tab$Poligono)
 permdisp2<- permutest( permdisp, permutations = 999)
-print(permdisp2)
+permdisp2
 
+titles<- paste0("adonis:", " Polygon, F=", round(perm$F[1], digits = 2), ", p-value=", round(perm$`Pr(>F)`[1], digits=3), ";", " Season, F=", round(perm$F[2], digits = 2), ", p-value=", round(perm$`Pr(>F)`[2], digits=3), ";", " \nPolygon*Season, F=", round(perm$F[3], digits = 2), ", p-value=", round(perm$`Pr(>F)`[3], digits=3))
+
+source("../Scripts/gg_ordiplots2.R")
+
+metadata1<- as.data.frame(nmds11) %>% dplyr::rename(SampleID=sample) %>% 
+    inner_join(metadata)
+y<-gg_ordiplot2(nmds1, groups = metadata1$Poligono, groups2 = metadata1$Season,ellipse =  F, 
+                            spiders = T, hull = F, plot = F, scaling = 3)
+  
+xlab <- y$plot$labels$x
+ylab <- y$plot$labels$y
+  
+
+z <-  ggplot() + geom_point(
+    data = y$df_ord %>% rownames_to_column(var = "SampleID") %>%
+      inner_join(metadata1),
+    aes(
+      x = x,
+      y = y,
+      color = Group,
+      shape = Season
+    ),
+    size = 4
+  ) +
+  xlab("NMDS1") +
+  ylab("NMDS2") +
+  geom_segment(
+    data = y$df_spiders,
+    aes(
+      x = cntr.x,
+      xend = x,
+      y = cntr.y,
+      yend = y,
+      color = Group
+    ),
+    show.legend = FALSE
+  ) +
+  annotate(
+    "text", label = paste("Stress", round(nmds1$stress, digits = 3)),
+    x = 25, y = -15, size = 5, colour = "black"
+  )+
+  guides(color = guide_legend(title = "Sites")) + theme_linedraw() +
+  geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_linedraw() +
+  scale_color_carto_d(name = "Polygons: ", palette = "Safe") +
+  theme_grey() +
+  theme(
+    axis.text = element_text(colour = "black", size = 12),
+    axis.title = element_text(colour = "black", size = 12),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right",
+    legend.box = "vertical",
+    panel.border = element_rect(
+      colour = "black",
+      fill = NA,
+      size = 1
+    )
+  ) +
+  ggtitle(titles) + theme(
+    panel.background = element_rect(
+      fill = "#F2F4F4",
+      colour = "#F2F4F4",
+      size = 0.5,
+      linetype = "solid"
+    ),
+    panel.grid.major = element_line(
+      size = 0.5,
+      linetype = 'solid',
+      colour = "white"
+    ),
+    panel.grid.minor = element_line(
+      size = 0.25,
+      linetype = 'solid',
+      colour = "white"
+    )
+  ) +
+  theme(aspect.ratio = 7 / 10)
+
+          #panel.grid.major = element_blank(),
+          #panel.grid.minor = element_blank())
+
+
+ggsave('../Plots/nmds_aitchison.png', width =8, height = 6, dpi = 300, plot =z)
+
+```
+
+```{r}
+nmds2=metaMDS(t(aldex.clr.transform@reads), distance = "robust.aitchison",trymax = 500, k = 2)
+
+nmds22= nmds2 %>%  
+  vegan:::scores.metaMDS(display = "sites") %>%
+  as_tibble(., rownames = "sample")
+
+
+
+
+set.seed(124)
+
+tab<-aldex.clr.transform@reads %>% t() %>% as.data.frame() %>% rownames_to_column(
+    var = "SampleID") %>% inner_join(metadata)
+perm<- how(nperm = 999)
+perm<-adonis2(t(aldex.clr.transform@reads) ~Poligono*Season, data = tab, method = 
+                  "robust.aitchison", permutations =perm)
+perm
+ 
+mat<- vegdist(t(aldex.clr.transform@reads), method = "robust.aitchison")
+permdisp<-betadisper(mat, tab$Poligono)
+permdisp2<- permutest( permdisp, permutations = 999)
+permdisp2
+
+titles<- paste0("adonis:", " Polygon, F=", round(perm$F[1], digits = 2), ", p-value=", round(perm$`Pr(>F)`[1], digits=3), ";", " Season, F=", round(perm$F[2], digits = 2), ", p-value=", round(perm$`Pr(>F)`[2], digits=3), ";", " \nPolygon*Season, F=", round(perm$F[3], digits = 2), ", p-value=", round(perm$`Pr(>F)`[3], digits=3))
+
+source("../Scripts/gg_ordiplots2.R")
+
+metadata1<- as.data.frame(nmds22) %>% dplyr::rename(SampleID=sample) %>% 
+    inner_join(metadata)
+y<-gg_ordiplot2(nmds2, groups = metadata1$Poligono, groups2 = metadata1$Season,ellipse =  F, 
+                            spiders = T, hull = F, plot = F, scaling = 3)
+  
+xlab <- y$plot$labels$x
+ylab <- y$plot$labels$y
+  
+
+z <-  ggplot() + geom_point(
+    data = y$df_ord %>% rownames_to_column(var = "SampleID") %>%
+      inner_join(metadata1),
+    aes(
+      x = x,
+      y = y,
+      color = Group,
+      shape = Season
+    ),
+    size = 4
+  ) +
+  xlab("NMDS1") +
+  ylab("NMDS2") +
+  geom_segment(
+    data = y$df_spiders,
+    aes(
+      x = cntr.x,
+      xend = x,
+      y = cntr.y,
+      yend = y,
+      color = Group
+    ),
+    show.legend = FALSE
+  ) +
+  annotate(
+    "text", label = paste("Stress", round(nmds2$stress, digits = 3)),
+    x = 25, y = -15, size = 5, colour = "black"
+  )+
+  guides(color = guide_legend(title = "Sites")) + theme_linedraw() +
+  geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_linedraw() +
+  scale_color_carto_d(name = "Polygons: ", palette = "Safe") +
+  theme_grey() +
+  theme(
+    axis.text = element_text(colour = "black", size = 12),
+    axis.title = element_text(colour = "black", size = 12),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right",
+    legend.box = "vertical",
+    panel.border = element_rect(
+      colour = "black",
+      fill = NA,
+      size = 1
+    )
+  ) +
+  ggtitle(titles) + theme(
+    panel.background = element_rect(
+      fill = "#F2F4F4",
+      colour = "#F2F4F4",
+      size = 0.5,
+      linetype = "solid"
+    ),
+    panel.grid.major = element_line(
+      size = 0.5,
+      linetype = 'solid',
+      colour = "white"
+    ),
+    panel.grid.minor = element_line(
+      size = 0.25,
+      linetype = 'solid',
+      colour = "white"
+    )
+  ) +
+  theme(aspect.ratio = 7 / 10)
+
+          #panel.grid.major = element_blank(),
+          #panel.grid.minor = element_blank())
+
+
+ggsave('../Plots/nmds_robust.aitchison.png', width =8, height = 6, dpi = 300, plot =z)
 
 
 ```
+
+
+```{r}
+nmds3=metaMDS(aldex.clr.transform.data, distance = "euclidean",trymax = 500, k = 2)
+
+nmds33= nmds3 %>%  
+  vegan:::scores.metaMDS(display = "sites") %>%
+  as_tibble(., rownames = "sample")
+
+
+
+
+set.seed(124)
+
+tab<-aldex.clr.transform.data %>% as.data.frame() %>% rownames_to_column(
+    var = "SampleID") %>% inner_join(metadata)
+perm<- how(nperm = 999)
+perm<-adonis2(aldex.clr.transform.data ~Poligono*Season, data = tab, method = 
+                  "euclidean", permutations =perm)
+perm
+ 
+mat<- vegdist(aldex.clr.transform.data, method = "euclidean")
+permdisp<-betadisper(mat, tab$Poligono)
+permdisp2<- permutest( permdisp, permutations = 999)
+permdisp2
+
+
+titles<- paste0("adonis:", " Polygon, F=", round(perm$F[1], digits = 2), ", p-value=", round(perm$`Pr(>F)`[1], digits=3), ";", " Season, F=", round(perm$F[2], digits = 2), ", p-value=", round(perm$`Pr(>F)`[2], digits=3), ";", " \nPolygon*Season, F=", round(perm$F[3], digits = 2), ", p-value=", round(perm$`Pr(>F)`[3], digits=3))
+
+source("../Scripts/gg_ordiplots2.R")
+
+metadata1<- as.data.frame(nmds22) %>% dplyr::rename(SampleID=sample) %>% 
+    inner_join(metadata)
+y<-gg_ordiplot2(nmds3, groups = metadata1$Poligono, groups2 = metadata1$Season,ellipse =  F, 
+                            spiders = T, hull = F, plot = F, scaling = 3)
+  
+
+xlab <- y$plot$labels$x
+ylab <- y$plot$labels$y
+  
+
+z <-  ggplot() + geom_point(
+    data = y$df_ord %>% rownames_to_column(var = "SampleID") %>%
+      inner_join(metadata1),
+    aes(
+      x = x,
+      y = y,
+      color = Group,
+      shape = Season
+    ),
+    size = 4
+  ) +
+  xlab("NMDS1") +
+  ylab("NMDS2") +
+  geom_segment(
+    data = y$df_spiders,
+    aes(
+      x = cntr.x,
+      xend = x,
+      y = cntr.y,
+      yend = y,
+      color = Group
+    ),
+    show.legend = FALSE
+  ) +
+  annotate(
+    "text", label = paste("Stress", round(nmds3$stress, digits = 3)),
+    x = 200, y = -150, size = 5, colour = "black"
+  )+
+  guides(color = guide_legend(title = "Sites")) + theme_linedraw() +
+  geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_linedraw() +
+  scale_color_carto_d(name = "Polygons: ", palette = "Safe") +
+  theme_grey() +
+  theme(
+    axis.text = element_text(colour = "black", size = 12),
+    axis.title = element_text(colour = "black", size = 12),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right",
+    legend.box = "vertical",
+    panel.border = element_rect(
+      colour = "black",
+      fill = NA,
+      size = 1
+    )
+  ) +
+  ggtitle(titles) + theme(
+    panel.background = element_rect(
+      fill = "#F2F4F4",
+      colour = "#F2F4F4",
+      size = 0.5,
+      linetype = "solid"
+    ),
+    panel.grid.major = element_line(
+      size = 0.5,
+      linetype = 'solid',
+      colour = "white"
+    ),
+    panel.grid.minor = element_line(
+      size = 0.25,
+      linetype = 'solid',
+      colour = "white"
+    )
+  ) +
+  theme(aspect.ratio = 7 / 10)
+
+          #panel.grid.major = element_blank(),
+          #panel.grid.minor = element_blank())
+
+
+ggsave('../Plots/nmds_euclidean.aitchison.png', width =8, height = 6, dpi = 300, plot =z)
+
+
+```
+
 

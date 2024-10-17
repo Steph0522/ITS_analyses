@@ -1,0 +1,161 @@
+---
+title: "beta diversity"
+output: html_document
+date: "2024-06-03"
+---
+
+
+## BETA DIVERSIDAD
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=7, fig.cap="Fig 7. PCA's todos los métodos"}
+library(qiime2R)
+library(tidyverse)
+library(ALDEx2)
+library(vegan)
+library(rcartocolor)
+
+
+#taxonomys
+taxa<- read_qza("../Data/taxonomy_SMOQ_ver10.qza")$data
+table<- read_qza("../Data/table_SMOQ_filt.qza")$data
+
+
+set.seed(124)
+
+metadata<- read.delim("../Data/its_map.txt")
+
+
+#betadisper test
+
+aldex.clr.transform <- aldex.clr(table, mc.samples = 2, denom="all",
+                                   verbose = FALSE, useMC=FALSE)
+
+aldex.clr.transform.data<-  t(getMonteCarloSample(aldex.clr.transform,1) )
+
+mat<- dist(aldex.clr.transform.data, method = "euclidean")
+
+
+
+
+```
+
+```{r}
+#nmds using aitchison
+
+nmds1=metaMDS(t(aldex.clr.transform@reads), distance = "aitchison",trymax = 500, k = 2)
+
+nmds11= nmds1 %>%  
+  vegan:::scores.metaMDS(display = "sites") %>%
+  as_tibble(., rownames = "sample")%>%
+  left_join(metadata, by = join_by(sample == SampleID)) %>%
+  group_by(Poligono, Season) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup()
+
+
+set.seed(124)
+
+tab<-aldex.clr.transform@reads %>% t() %>% as.data.frame() %>% rownames_to_column(
+    var = "SampleID") %>% inner_join(metadata)
+
+
+permdisp<-betadisper(mat, tab$Poligono)
+permdisp2<- permutest( permdisp, permutations = 999)
+permdisp2
+
+
+perm<- how(nperm = 999)
+perm<-adonis2(t(aldex.clr.transform@reads) ~Poligono*Season, data = tab, method = 
+                  "aitchison", permutations =perm)
+perm
+ 
+titles<- paste0("adonis:", " Polygon, F=", round(perm$F[1], digits = 2), ", p-value=", round(perm$`Pr(>F)`[1], digits=3), ";", " Season, F=", round(perm$F[2], digits = 2), ", p-value=", round(perm$`Pr(>F)`[2], digits=3), ";", " \nPolygon*Season, F=", round(perm$F[3], digits = 2), ", p-value=", round(perm$`Pr(>F)`[3], digits=3))
+
+source("../Scripts/gg_ordiplots2.R")
+
+metadata1<- as.data.frame(nmds11) %>% dplyr::rename(SampleID=sample) %>% 
+    inner_join(metadata)
+y<-gg_ordiplot2(nmds1, groups = metadata1$Poligono, groups2 = metadata1$Season,ellipse =  F, 
+                            spiders = T, hull = F, plot = F, scaling = 3)
+  
+xlab <- y$plot$labels$x
+ylab <- y$plot$labels$y
+  
+
+z <-  ggplot() + geom_point(
+    data = y$df_ord %>% rownames_to_column(var = "SampleID") %>%
+      inner_join(metadata1),
+    aes(
+      x = x,
+      y = y,
+      color = Group,
+      shape = Season
+    ),
+    size = 4
+  ) +
+  xlab("NMDS1") +
+  ylab("NMDS2") +
+  geom_segment(
+    data = y$df_spiders,
+    aes(
+      x = cntr.x,
+      xend = x,
+      y = cntr.y,
+      yend = y,
+      color = Group
+    ),
+    show.legend = FALSE
+  ) +
+  annotate(
+    "text", label = paste("Stress", round(nmds1$stress, digits = 3)),
+    x = 25, y = -15, size = 5, colour = "black"
+  )+
+  guides(color = guide_legend(title = "Sites")) + theme_linedraw() +
+  geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_linedraw() +
+  scale_color_carto_d(name = "Polygons: ", palette = "Safe") +
+  theme_grey() +
+  theme(
+    axis.text = element_text(colour = "black", size = 12),
+    axis.title = element_text(colour = "black", size = 12),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right",
+    legend.box = "vertical",
+    panel.border = element_rect(
+      colour = "black",
+      fill = NA,
+      size = 1
+    )
+  ) +
+  ggtitle(titles) + theme(
+    panel.background = element_rect(
+      fill = "#F2F4F4",
+      colour = "#F2F4F4",
+      size = 0.5,
+      linetype = "solid"
+    ),
+    panel.grid.major = element_line(
+      size = 0.5,
+      linetype = 'solid',
+      colour = "white"
+    ),
+    panel.grid.minor = element_line(
+      size = 0.25,
+      linetype = 'solid',
+      colour = "white"
+    )
+  ) +
+  theme(aspect.ratio = 7 / 10)
+
+          #panel.grid.major = element_blank(),
+          #panel.grid.minor = element_blank())
+
+z
+ggsave('../Plots/nmds_aitchison.png', width =8, height = 6, dpi = 300, plot =z)
+
+```
+

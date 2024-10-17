@@ -1,0 +1,234 @@
+---
+title: "beta diversity"
+output: html_document
+date: "2024-06-03"
+---
+
+
+## BETA DIVERSIDAD
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=7, fig.cap="Fig 7. PCA's todos los métodos"}
+library(qiime2R)
+library(tidyverse)
+library(ALDEx2)
+library(ggordiplots)
+library(vegan)
+
+
+
+#taxonomys
+taxa<- read_qza("../Data/taxonomy_SMOQ_ver10.qza")$data
+table<- read_qza("../Data/table_SMOQ_rar.qza")$data
+ordination = read_qza("../Data/ordination_SMOQ.qza")$data
+distance = read_qza("../Data/distance_SMOQ.qza")$data
+
+set.seed(124)
+
+metadata<- read.delim("../Data/its_map.txt")
+
+metadata1 = as.data.frame(ordination$Vectors) %>% 
+  inner_join(metadata)
+
+metadata1$Poligono = as.factor(metadata1$Poligono)
+metadata1$Season = as.factor(metadata1$Season)
+
+
+#x <- y <- cntr.x <- cntr.y <- Group <- NULL
+#groups <- as.factor(groups)
+#groups2 = as.factor(groups2)
+#if (show.groups[1]=="all") {
+ #   show.groups <- as.vector(levels(groups))
+#  }
+  
+df_ord <- ordination$Vectors %>% column_to_rownames(var = "SampleID") 
+axis.labels <- ordination$ProportionExplained[choices]
+show.groups <- as.vector(levels(metadata1$Poligono))
+df_ord <- data.frame(x=df_ord[ , 1], y=df_ord[ , 2], Group=metadata1$Poligono, Group2= metadata1$Season)
+rownames(df_ord)=ordination$Vectors$SampleID
+df_mean.ord <- aggregate(df_ord[,1:2], by=list(df_ord$Group),mean)
+colnames(df_mean.ord) <- c("Group", "x", "y")
+ 
+df_spiders <- df_ord[-4]
+df_spiders$cntr.x <- NA
+df_spiders$cntr.y <- NA
+  for (g in show.groups) {
+    df_spiders[which(df_spiders$Group==g), 4:5] <- df_mean.ord[which(df_mean.ord==g), 2:3]
+  }
+df_spiders <- df_spiders[ , c(3,4,5,1,2)]
+df_spiders <- df_spiders[order(df_spiders$Group), ]
+
+# Make basic ggplot with ellipses.
+xlab <- axis.labels[1]
+ylab <- axis.labels[2]
+
+plt <- ggplot2::ggplot() +
+    geom_point(data=df_ord, aes(x=x*2, y=y*2, color=Group, shape=Group2), size = 4) +
+    xlab(xlab) + ylab(ylab)
+
+plt <- plt + geom_segment(data=df_spiders, aes(x=cntr.x*2, xend=x*2, y=cntr.y*2, yend=y*2, color=Group), show.legend = FALSE)
+  
+  plt <- plt + coord_fixed(ratio=1)
+  
+ 
+  
+xlabs <- paste("PC1",round(xlab*100, digits = 2), "%")
+ylabs <- paste("PC2", round(ylab*100, digits = 2), "%")
+  
+
+set.seed(124)
+library(vegan)
+perm<- how(nperm = 999)
+perm<-adonis2(distance~Poligono*Season, data = metadata1, method = 
+                  "euclidian", permutations =perm)
+perm
+ 
+
+permdisp<-betadisper(distance, metadata1$Poligono)
+permdisp2<- permutest( permdisp, permutations = 999)
+permdisp2
+
+titles<- paste0("adonis:", " Polygon, F=", round(perm$F[1], digits = 2), ", p-value=", round(perm$`Pr(>F)`[1], digits=3), ";", " Season, F=", round(perm$F[2], digits = 2), ", p-value=", round(perm$`Pr(>F)`[2], digits=3), ";", " \nPolygon*Season, F=", round(perm$F[3], digits = 2), ", p-value=", round(perm$`Pr(>F)`[3], digits=3))
+
+
+plot= plt+
+  guides(
+    color=guide_legend(title="Sites"))+theme_linedraw() +
+    geom_vline(xintercept = 0, linetype = 2) +   
+    geom_hline(yintercept = 0, linetype = 2) +
+    theme_linedraw()+
+    scale_color_carto_d(name = "Polygon ", palette = "Safe") +
+    geom_text(data=data.frame(ordination$Species) %>%  
+                dplyr::rename(Feature.ID=FeatureID) %>% 
+                                mutate(a=sqrt(PC1^2+PC2^2)) %>% 
+                                top_n(6, a) %>% #keep 10 furthest away points
+                                mutate(PC1=PC1*2.5, PC2=PC2*2.5)%>% left_join(
+                                  taxa)%>% dplyr::select(
+                                    Taxon, PC1, PC2, Feature.ID)%>%
+                                mutate_at(
+                                  c("Taxon"), ~str_replace(
+                                    .,";s__unidentified", ""))%>%
+                                mutate_at(
+                                  c("Taxon"), ~str_replace(
+                                    .,";g__unidentified", "")) %>% separate(Taxon, c(
+  "Domain", "Phylum", "Class", "Order", "Family", "Genus", "Specie"), sep = ";") %>% mutate_at(
+    c("Genus"), str_extract, "[^_]+$") %>% mutate(
+      Genus=case_when(
+      Genus =="sedis" ~"",
+      TRUE~as.character(Genus))),
+                      aes(x=PC1, y=PC2, label= Genus),
+    check_overlap = TRUE,
+               col = 'black', fill= "#EEEEEE",
+                              fontface="italic", 
+               label.r = unit(0.1, "cm"),
+               size=4, 
+               nudge_y = 0.25,nudge_x = 0.25,
+               label.padding = unit(0.05, "cm"))+theme_grey()+
+  theme(axis.text = element_text(colour = "black", size = 12),
+          axis.title = element_text(colour = "black", size = 12),
+          legend.text = element_text(size = 10),
+          legend.title = element_text(size = 12), 
+          legend.position = "right", 
+          legend.box = "vertical",
+            panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  ggtitle(titles)+ theme(
+  panel.background = element_rect(fill = "#F2F4F4",
+                                colour = "#F2F4F4",
+                                size = 0.5, linetype = "solid"),
+  panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                colour = "white"), 
+  panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                colour = "white")
+  )+xlab(xlabs)+ylab(ylabs)+
+  theme(aspect.ratio=7/10)
+
+
+ggsave('../Plots/pca_otus_decoide.png', width =9, height = 6, dpi = 300, plot =plot)
+
+
+```
+
+```{r}
+ord<- read_qza("../Data/ordination_SMOQ_rar.qza")$data
+metadata1<- as.data.frame(ord$Vectors)  %>% 
+    inner_join(metadata)
+
+source("../Scripts/gg_ordiplots3.R")
+
+y1<-gg_ordiplot3(ord, groups = metadata1$Poligono, groups2 = metadata1$Season,
+                            spiders = T, plot = F, scaling = 3)
+  
+xlab <- y1$plot$labels$x
+ylab <- y1$plot$labels$y
+  
+z<-ggplot()+ geom_point(data = y1$df_ord %>% rownames_to_column(var="SampleID") %>% 
+                            inner_join(metadata1),
+                        aes(x = x, y = y, color = Group, shape=Season), size = 3) + 
+ xlab(xlab) + 
+ylab(ylab)+
+  geom_segment(data = y1$df_spiders,
+               aes(x = cntr.x, xend = x, y = cntr.y, yend = y, color = Group), 
+                 show.legend = FALSE)+
+
+  guides(
+    color=guide_legend(title="Sites"))+theme_linedraw() +
+    geom_vline(xintercept = 0, linetype = 2) +   #lines-cross
+    geom_hline(yintercept = 0, linetype = 2) +
+    theme_linedraw()+
+    #scale_fill_viridis_d(option ="turbo", name="Poligono")+#color of points 
+    #scale_color_viridis_d(option ="turbo" )+#color of points 
+        scale_color_carto_d(name = "Polygons: ", palette = "Safe") +
+
+    theme(axis.text = element_text(colour = "black", size = 12),
+          axis.title = element_text(colour = "black", size = 12),
+          legend.text = element_text(size = 10),
+          legend.title = element_text(size = 12), 
+          legend.position = "right", 
+          legend.box = "vertical",
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())+
+    geom_text(data=data.frame(ord$Species) %>%   #arrows
+                              dplyr::rename( "Feature.ID"="FeatureID")%>%  
+                                mutate(a=sqrt(PC1^2+PC2^2)) %>% # calculate the distance from the origin
+                                top_n(5, a) %>% #keep 10 furthest away points
+                                mutate(PC1=PC1*.8, PC2=PC2*.8)%>% left_join(
+                                  taxa)%>% dplyr::select(
+                                    Taxon, PC1, PC2, Feature.ID)%>%
+                                mutate_at(
+                                  c("Taxon"), ~str_replace(
+                                    .,";s__unidentified", ""))%>%
+                                mutate_at(
+                                  c("Taxon"), ~str_replace(
+                                    .,";g__unidentified", "")) %>% separate(Taxon, c(
+  "Domain", "Phylum", "Class", "Order", "Family", "Genus", "Specie"), sep = ";") %>% mutate_at(
+    c("Genus"), str_extract, "[^_]+$") ,
+                              aes(x=PC1, y=PC2, label= Genus),
+                             # segment.colour = NA,
+               col = 'black', fill= "#EEEEEE",
+                              fontface="italic", 
+               label.r = unit(0.1, "cm"),
+               size=4, 
+               nudge_y = 0.25,nudge_x = 0.25,
+               label.padding = unit(0.05, "cm"))
+
+ggsave('../Plots/pca_compo_otus_rar.png', width =8, height = 6, dpi = 300, plot =z)
+
+
+aldex.clr.transform.datas<- read_qza("../Data/distance_SMOQ_rar.qza")$data
+
+tab<-reshape2::melt(as.matrix(aldex.clr.transform.datas), varnames = c("row", "col")) %>% dplyr::rename("SampleID"="row") %>% inner_join(metadata) %>% slice(1:72)
+library(vegan)
+perm<- how(nperm = 999)
+perm<-adonis2(aldex.clr.transform.datas~Poligono*Season, data = tab, method = 
+                  "euclidian", permutations =perm)
+print(perm)
+ 
+mat<- dist(aldex.clr.transform.datas, method = "euclidean")
+permdisp<-betadisper(mat, tab$Poligono)
+permdisp2<- permutest( permdisp, permutations = 999)
+print(permdisp2)
+
+
+
+```
+
