@@ -14,41 +14,14 @@ library(circlize)
 library(viridis)
 library(ggh4x)
 
-tab <- read_qza("../Data/table_SMOQ.qza")$data %>% as.data.frame() %>% 
+tab <- read_qza("../Data/table_SMOQ_filt.qza")$data %>% as.data.frame() %>% 
 rownames_to_column(var = "Feature.ID") 
 taxa<- qiime2R::read_qza("../Data/taxonomy_SMOQ_ver10.qza")$data %>% as.data.frame()
-
-#tab <- read_qza("../Data/table_SMDR.qza")$data %>% as.data.frame() %>% 
-#rownames_to_column(var = "Feature.ID") 
-#taxa<- qiime2R::read_qza("../Data/taxonomy_SMDR.qza")$data %>% as.data.frame()
-
+metadata<- read.delim("../Data/its_map.txt")
 
 tab_tax<- tab %>% inner_join(taxa)
 
 tab_taxa<- tab_tax %>% dplyr::select(OTUID=Feature.ID, `121D`:`221D`, taxonomy=Taxon)
-#tab_taxa<- tab_tax %>% dplyr::select(OTUID=Feature.ID, `111D`:`623R`, taxonomy=Taxon)
-
-
-#guilds
-
-#guild1<- read.delim("../Data/otus/table_otus.guilds_matched.txt", check.names = F) %>% 
- # filter(!"Trophic Mode"=="na") %>%
-  #mutate(Guild = str_replace_all(Guild, "\\|", ""))
-
-guild1<- read.delim("../Data/asvs/table_asvs.guilds_matched.txt", check.names = F) %>% 
- filter(!"Trophic Mode"=="na") %>%
-mutate(Guild = str_replace_all(Guild, "\\|", ""))
-
-
-
-guild<- guild1 %>% group_by(Genus=Taxon, Guild) %>% dplyr::count()
-trophic<- guild1 %>% group_by(Genus=Taxon, `Trophic Mode`) %>% dplyr::count()
-
-
-relabunda<- function(x){(as.data.frame(t(t(x)/colSums(x)))*100)}
-
-metadata<- read.delim("../Data/its_map.txt")
-
 
 vector_order<- c("111D" , "112D", "113D" ,"121D", "122D" ,"123D", "111R" ,"112R", "113R", "121R", "122R" ,"123R",
                  "211D" ,"212D" ,"213D" ,"221D" ,"222D" ,"223D", "211R" ,"212R" ,"213R", "221R", "222R" ,"223R",
@@ -59,70 +32,75 @@ vector_order<- c("111D" , "112D", "113D" ,"121D", "122D" ,"123D", "111R" ,"112R"
 
 #ordering
 
-#taxones_color<- read_csv("../Data/taxones_color.csv") %>% dplyr::rename(Genus=Taxon)
+tab_taxa_order = tab_taxa %>% dplyr::select(OTUID, vector_order, taxonomy)
+
+tab_order_metadata = tab_taxa_order %>% column_to_rownames(var = "OTUID") %>% t() %>% 
+  as.data.frame() %>% rownames_to_column(var = "SampleID") %>% inner_join(metadata) 
+  
 
 
-table_genus <- tab_taxa %>%  separate(taxonomy,
-                                      c(
-                                        "Kingdom",
-                                        "Phylum",
-                                        "Order",
-                                        "Class",
-                                        "Family",
-                                        "Genus",
-                                        "Species"
-                                      ),
-                                      sep = ";") %>% mutate_at(c("Genus"), ~ str_replace(., "g__", "")) %>%
-  dplyr::mutate(Genus = stringr::str_trim(Genus, side = "both")) %>% mutate_if(is.character, ~
-                                                                                 replace_na(., "Unassigned")) %>% group_by(Genus) %>% summarise_if(is.numeric, sum) %>%
-  column_to_rownames(var = "Genus") %>% t() %>% as.data.frame() %>%
-  rownames_to_column(var = "SampleID") %>%
-  inner_join(metadata) %>% group_by(Poligono, Season) %>%
-  summarise_if(is.numeric, sum) %>%
-  unite("ids", Poligono:Season, sep = ".") %>% column_to_rownames(var = "ids") %>%
-  t() %>% as.data.frame() %>% mutate(all = rowSums(.)) %>% dplyr::arrange(-all) %>% relabunda(.) %>%
-  as.data.frame() %>%  rownames_to_column(var = "Genus") %>% filter(!Genus ==
-                                                                      "unidentified" ,
-                                                                    !Genus == "Unassigned") %>%
-  filter(!grepl('Incertae_sedis', Genus)) %>% slice(c(1:50))  %>% pivot_longer(.,
-                                                                               cols = -Genus,
-                                                                               names_to = "SampleID",
-                                                                               values_to = "relab") %>% filter(!SampleID ==
-                                                                                                                 "all")
-#cols <-
- 
-# table_genus %>% inner_join(taxones_color) %>% arrange(Genus)
-#col <- as.character(cols$color)
-#names(col) <- as.character(cols$Genus)
+#season
+tab_season = tab_order_metadata %>% arrange(Season) %>%dplyr::select(-overhang:-LIB) %>%  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_if(is.character, as.numeric)
+vector_season = c(rep("Dry", 36), rep("Rainy", 36))
 
-barplot_genus<- table_genus %>% dplyr::select(
-    Genus, SampleID, relab) %>% pivot_wider(
-      names_from = Genus, values_from = relab) %>% column_to_rownames(
-        var = "SampleID") %>% t() %>% as.data.frame()
+#polygon
+tab_polygon = tab_order_metadata %>% arrange(Poligono)%>% dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric)
+vector_polygon = c(rep("P1", 12),rep("P2", 12), rep("P3", 12),
+                   rep("P4", 12),rep("P5", 12),rep("P6", 12))
 
+#season-polygon
+tab_polygon_dry = tab_order_metadata %>% filter(Season=="Dry") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+vector_polygon_dry = c(rep("P1", 6),rep("P2", 6), rep("P3", 6),
+                   rep("P4", 6),rep("P5", 6),rep("P6", 6))
 
+tab_polygon_rainy = tab_order_metadata %>% filter(Season=="Rainy") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+vector_polygon_rainy = c(rep("P1", 6),rep("P2", 6), rep("P3", 6),
+                   rep("P4", 6),rep("P5", 6),rep("P6", 6))
 
-data_fungi_order=barplot_genus%>%
-rownames_to_column(var="Genus") 
+#polygon-season
+tab_p1 = tab_order_metadata %>% filter(Poligono=="P1") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+tab_p2 = tab_order_metadata %>% filter(Poligono=="P2") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>%  
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+tab_p3 = tab_order_metadata %>% filter(Poligono=="P3") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>%   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric)
+tab_p4 = tab_order_metadata %>% filter(Poligono=="P4") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>%   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric)
+tab_p5 = tab_order_metadata %>% filter(Poligono=="P5") %>% arrange(Season) %>%dplyr::select(-overhang:-LIB)%>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+tab_p6 = tab_order_metadata %>% filter(Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB)%>%   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
 
 
-merge_data<- data_fungi_order %>% mutate(Genus=case_when(
-        Genus=="Leptosphaeria maculans species complex" ~ "Leptosphaeria", 
-        TRUE ~ as.character(Genus)))%>% column_to_rownames(
-          var = "Genus") %>% mutate(proms=rowMeans(.)) %>% dplyr::arrange(-proms) %>% slice(
-            1:80)%>% dplyr::select(-proms) %>% mutate_all(., funs(R = case_when(
-              . <= 0.001 ~ 0,
-              . >  0.001 & .  <= 0.005 ~ 1,
-              . >  0.005 & .  <= 0.01 ~ 2,
-              . >  0.01 & .  <= 0.10 ~ 3,
-              . >  0.10 & .  <= 0.20 ~ 4,
-              . >  0.20 & .  <= 1.00 ~ 5,
-              . >  1.00 & .  <= 2.00 ~ 6,
-              . >  2.00 & .  <= 5.00 ~ 7,
-              . >  5.00 & .  <= 10.00 ~ 8,
-              . >  10.00 & .  <= 25.00 ~ 9,
-              . >  25.00 & .  <= 50.00 ~ 10,
-              . >  50.00 & .  <= 75.00 ~ 11,
-              . >  75.00 ~ 12))) %>%select_at(
-                vars(contains("_R"))) %>% select_all(~str_replace(., "_R", ""))
+vector_p = c(rep("Dry", 6), rep("Rainy", 6))
+
+
 ```
+
+```{r}
+library(ALDEx2)
+
+
+aldex_season = aldex(tab_season, conditions = vector_season, mc.samples = 128,denom = "all")
+aldex_season_filt = aldex_season %>% filter(wi.ep < 0.05)
+
+aldex_polygon = aldex(tab_polygon, conditions = vector_polygon, mc.samples = 128,denom = "all", test = "kw")
+
+
+aldex_p1 = aldex(tab_p1, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p2 = aldex(tab_p2, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p3 = aldex(tab_p3, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p4 = aldex(tab_p4, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p5 = aldex(tab_p5, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p6 = aldex(tab_p6, conditions = vector_p, mc.samples = 128,denom = "all")
+```
+
+
+
+
