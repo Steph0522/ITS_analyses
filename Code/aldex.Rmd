@@ -95,15 +95,6 @@ aldex_polygon_filt = aldex_polygon %>% filter(kw.eBH<0.05)
 
 #write.csv(aldex_polygon_filt, "aldex_polygon_filt.csv")
 
-
-aldex_p1 = aldex(tab_p1, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p2 = aldex(tab_p2, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p3 = aldex(tab_p3, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p4 = aldex(tab_p4, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p5 = aldex(tab_p5, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p6 = aldex(tab_p6, conditions = vector_p, mc.samples = 128,denom = "all")
-
-
 aldex_dry = aldex(tab_polygon_dry, conditions = vector_polygon_dry, mc.samples = 128,denom = "all", test = "kw")
 
 aldex_dry_filt = aldex_dry %>% filter(kw.ep < 0.05)
@@ -115,9 +106,239 @@ aldex_rainy_filt = aldex_rainy %>% filter(kw.ep < 0.05)
 
 ```
 
-
 ```{r}
+library(ALDEx2) 
+
+
+#aldex effect of season by polygon
+aldex_p1 = aldex(tab_p1, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p1_filt = aldex_p1 %>% filter(wi.ep <0.05)
+
+aldex_p2 = aldex(tab_p2, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p2_filt = aldex_p2 %>% filter(wi.ep <0.05)
+
+aldex_p3 = aldex(tab_p3, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p3_filt = aldex_p3 %>% filter(wi.ep <0.05)
+
+aldex_p4 = aldex(tab_p4, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p4_filt = aldex_p4 %>% filter(wi.ep <0.05)
+
+aldex_p5 = aldex(tab_p5, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p5_filt = aldex_p5 %>% filter(wi.ep <0.05)
+
+
+aldex_p6 = aldex(tab_p6, conditions = vector_p, mc.samples = 128,denom = "all")
+aldex_p6_filt = aldex_p6 %>% filter(wi.ep <0.05)
 
 ```
+
+```{r}
+p1=aldex_p1_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
+    mutate(taxa = case_when(
+    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
+    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
+    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
+    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
+    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
+    TRUE ~ NA_character_
+  )) %>%
+  mutate(type = case_when(
+    diff.btw < 0 ~ "Dry",
+    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
+ mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
+  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col(width = 0.5)+coord_flip()+
+  scale_fill_manual(values = c("#2887a1","#A16928"))+
+  theme(axis.text.y = element_text(face = "italic"))+
+  xlab("ASV")+
+  labs(fill = NULL) +  
+  theme(legend.position = "top",  
+        legend.box = "horizontal") +  
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
+
+
+
+p2=aldex_p2_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
+    mutate(taxa = case_when(
+    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
+    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
+    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
+    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
+    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
+    TRUE ~ NA_character_
+  )) %>%
+  mutate(type = case_when(
+    diff.btw < 0 ~ "Dry",
+    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
+ mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
+  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
+  scale_fill_manual(values = c("#A16928","#2887a1"))+
+  theme(axis.text.y = element_text(face = "italic"))+
+  xlab("ASV")+
+  labs(fill = NULL) +  
+  theme(legend.position = "top",  
+        legend.box = "horizontal") +  
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
+
+
+p3=aldex_p3_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
+    mutate(taxa = case_when(
+    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
+    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
+    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
+    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
+    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
+    TRUE ~ NA_character_
+  )) %>%
+  filter(!taxa=="k__Fungi") %>% 
+  mutate(type = case_when(
+    diff.btw < 0 ~ "Dry",
+    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
+ mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
+  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
+  scale_fill_manual(values = c("#A16928","#2887a1"))+
+  theme(axis.text.y = element_text(face = "italic"))+
+  xlab("ASV")+
+  labs(fill = NULL) +  
+  theme(legend.position = "top",  
+        legend.box = "horizontal") +  
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
+
+
+p4=aldex_p4_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
+    mutate(taxa = case_when(
+    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
+    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
+    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
+    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
+    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
+    TRUE ~ NA_character_
+  )) %>%
+  filter(!taxa=="k__Fungi") %>%
+  group_by(taxa) %>%
+  mutate(repeat_count = row_number() * (n() > 1)) %>%
+  ungroup() %>%
+  mutate(taxa = ifelse(repeat_count > 0, paste0(taxa,repeat_count), taxa)) %>%
+  dplyr::select(-repeat_count)  %>%   
+  mutate(type = case_when(
+    diff.btw < 0 ~ "Dry",
+    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
+ mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
+  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
+  scale_fill_manual(values = c("#A16928","#2887a1"))+
+  theme(axis.text.y = element_text(face = "italic"))+
+  xlab("ASV")+
+  labs(fill = NULL) +  
+  theme(legend.position = "top",  
+        legend.box = "horizontal") +  
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
+
+
+
+
+
+p5=aldex_p5_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
+    mutate(taxa = case_when(
+    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
+    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
+    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
+    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
+    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
+    TRUE ~ NA_character_
+  )) %>%
+  filter(!taxa=="k__Fungi") %>%
+  group_by(taxa) %>%
+  mutate(repeat_count = row_number() * (n() > 1)) %>%
+  ungroup() %>%
+  mutate(taxa = ifelse(repeat_count > 0, paste0(taxa,repeat_count), taxa)) %>%
+  dplyr::select(-repeat_count)  %>%   
+  mutate(type = case_when(
+    diff.btw < 0 ~ "Dry",
+    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
+ mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
+  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
+  scale_fill_manual(values = c("#A16928","#2887a1"))+
+  theme(axis.text.y = element_text(face = "italic"))+
+  xlab("ASV")+
+  labs(fill = NULL) +  
+  theme(legend.position = "top",  
+        legend.box = "horizontal") +  
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
+
+
+
+
+p6=aldex_p6_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
+    mutate(taxa = case_when(
+    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
+    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
+    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
+    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
+    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
+    TRUE ~ NA_character_
+  )) %>%
+  mutate(taxa = ifelse(taxa == "Wilcoxina_rehmii", paste0(taxa, "*"), taxa)) %>% 
+  filter(!taxa=="k__Fungi") %>%
+  group_by(taxa) %>%
+  mutate(repeat_count = row_number() * (n() > 1)) %>%
+  ungroup() %>%
+  mutate(taxa = ifelse(repeat_count > 0, paste0(taxa,repeat_count), taxa)) %>%
+  dplyr::select(-repeat_count)  %>%   
+  mutate(type = case_when(
+    diff.btw < 0 ~ "Dry",
+    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
+ mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
+  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
+  scale_fill_manual(values = c("#2887a1"))+
+  theme(axis.text.y = element_text(face = "italic"))+
+  xlab("ASV")+
+  labs(fill = NULL) +  
+  theme(legend.position = "top",  
+        legend.box = "horizontal",
+         axis.text.x = element_text(hjust = 1) ) +  
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
+
+```
+
+
+```{r}
+library(cowplot)
+
+p=   aldex_p2_filt  %>% rownames_to_column(var = "ID") %>% 
+  mutate(type = case_when(
+    diff.btw < 0 ~ "Dry",
+    TRUE ~ "Rainy"    ))%>% 
+  ggplot(aes(y=diff.btw, x=ID, fill=type))+geom_col()+
+  scale_fill_manual(name="",values = c("#A16928","#2887a1"))+
+    guides(fill = guide_legend(nrow = 1, byrow = TRUE))+theme(  
+      legend.box = "horizontal" ,
+      legend.title = element_text(hjust = 0.5),  
+        legend.spacing.x = unit(0.5, 'cm'))
+
+
+leg <- cowplot::get_legend(p)
+
+
+all1=plot_grid(p1+theme(legend.position = "none",axis.title.x = element_blank()),
+          p2+theme(legend.position = "none", axis.title.x = element_blank()),
+          p3+theme(legend.position = "none"), ncol =1, align = "v", 
+          labels = c("A) P1", "C) P2", "E) P3"), label_x = -0.03)
+
+all2=plot_grid(p4+theme(legend.position = "none", axis.title = element_blank()),
+          p5+theme(legend.position = "none", axis.title = element_blank()),
+          p6+theme(legend.position = "none", axis.title.y = element_blank()), ncol =1,
+          align = "v",labels = c("B) P4", "D) P5", "F) P6"),label_x = -0.05)
+
+
+
+all=plot_grid(all1,all2)
+
+alls=plot_grid(leg, all, ncol = 1, rel_heights = c(0.1,1))
+
+ggsave("aldex_polss.png", plot = alls, device = "png", width = 14, height = 16) 
+
+```
+
+
+
 
 
