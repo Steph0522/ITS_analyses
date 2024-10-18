@@ -84,7 +84,7 @@ vector_p = c(rep("Dry", 6), rep("Rainy", 6))
 ```
 
 ```{r}
-library(ALDEx2)
+library(ALDEx2) 
 
 
 aldex_season = aldex(tab_season, conditions = vector_season, mc.samples = 128,denom = "all")
