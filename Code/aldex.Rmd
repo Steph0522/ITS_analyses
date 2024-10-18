@@ -91,6 +91,9 @@ aldex_season = aldex(tab_season, conditions = vector_season, mc.samples = 128,de
 aldex_season_filt = aldex_season %>% filter(wi.ep < 0.05)
 
 aldex_polygon = aldex(tab_polygon, conditions = vector_polygon, mc.samples = 128,denom = "all", test = "kw")
+aldex_polygon_filt = aldex_polygon %>% filter(kw.eBH<0.05)
+
+#write.csv(aldex_polygon_filt, "aldex_polygon_filt.csv")
 
 
 aldex_p1 = aldex(tab_p1, conditions = vector_p, mc.samples = 128,denom = "all")
@@ -99,8 +102,22 @@ aldex_p3 = aldex(tab_p3, conditions = vector_p, mc.samples = 128,denom = "all")
 aldex_p4 = aldex(tab_p4, conditions = vector_p, mc.samples = 128,denom = "all")
 aldex_p5 = aldex(tab_p5, conditions = vector_p, mc.samples = 128,denom = "all")
 aldex_p6 = aldex(tab_p6, conditions = vector_p, mc.samples = 128,denom = "all")
+
+
+aldex_dry = aldex(tab_polygon_dry, conditions = vector_polygon_dry, mc.samples = 128,denom = "all", test = "kw")
+
+aldex_dry_filt = aldex_dry %>% filter(kw.ep < 0.05)
+
+aldex_rainy = aldex(tab_polygon_rainy, conditions = vector_polygon_rainy, mc.samples = 128,denom = "all", test = "kw")
+aldex_rainy_filt = aldex_rainy %>% filter(kw.ep < 0.05)
+
+#write.csv(aldex_rainy_filt, "aldex_rainy_filt.csv")
+
 ```
 
 
+```{r}
+
+```
 
 
