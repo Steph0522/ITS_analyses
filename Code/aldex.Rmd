@@ -486,3 +486,9 @@ resultados2 <- map2(datos_list, vectores_list, aldex_polp2)
 
 ```
 
+```{r}
+source("../Scripts/aldex_plotp.R")
+
+aldex.plotp(x.all, type = "volcano")
+```
+
