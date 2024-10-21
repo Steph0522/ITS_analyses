@@ -79,36 +79,122 @@ tab_p6 = tab_order_metadata %>% filter(Poligono=="P6") %>% arrange(Season)%>%dpl
 
 
 vector_p = c(rep("Dry", 6), rep("Rainy", 6))
+```
 
+
+```{r}
+#polygon-paired
+tab_p12 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P2") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+vector_p12 = c(rep("P1", 12), rep("P2", 12))
+
+
+tab_p13 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P3") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p13 = c(rep("P1", 12), rep("P3", 12))
+
+
+tab_p14 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P4") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p14 = c(rep("P1", 12), rep("P4", 12))
+
+
+tab_p15 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P5") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p15 = c(rep("P1", 12), rep("P5", 12))
+
+tab_p16 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p16 = c(rep("P1", 12), rep("P6", 12))
+
+
+tab_p23 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P3") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+vector_p23 = c(rep("P2", 12), rep("P3", 12))
+
+
+
+tab_p24 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P4") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p24 = c(rep("P2", 12), rep("P4", 12))
+
+
+tab_p25 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P5") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p25 = c(rep("P2", 12), rep("P5", 12))
+
+tab_p26 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p26 = c(rep("P2", 12), rep("P6", 12))
+
+
+
+tab_p34 = tab_order_metadata %>% filter(Poligono=="P3"|Poligono=="P4") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p34 = c(rep("P3", 12), rep("P4", 12))
+
+
+tab_p35 = tab_order_metadata %>% filter(Poligono=="P3"|Poligono=="P5") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p35 = c(rep("P3", 12), rep("P5", 12))
+
+tab_p36 = tab_order_metadata %>% filter(Poligono=="P3"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p36 = c(rep("P3", 12), rep("P6", 12))
+
+
+
+tab_p45 = tab_order_metadata %>% filter(Poligono=="P4"|Poligono=="P5") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p45 = c(rep("P4", 12), rep("P5", 12))
+
+tab_p46 = tab_order_metadata %>% filter(Poligono=="P4"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p46 = c(rep("P4", 12), rep("P6", 12))
+
+tab_p56 = tab_order_metadata %>% filter(Poligono=="P5"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+  column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
+  filter(rowSums(.) != 0)
+
+vector_p56 = c(rep("P5", 12), rep("P6", 12))
 
 ```
 
 ```{r}
 library(ALDEx2) 
 
+#aldex season no salió nada
+#aldex_season = aldex(tab_season, conditions = vector_season, mc.samples = 128,denom = "all")
+#aldex_season_filt = aldex_season %>% filter(wi.ep < 0.05)
 
-aldex_season = aldex(tab_season, conditions = vector_season, mc.samples = 128,denom = "all")
-aldex_season_filt = aldex_season %>% filter(wi.ep < 0.05)
-
-aldex_polygon = aldex(tab_polygon, conditions = vector_polygon, mc.samples = 128,denom = "all", test = "kw")
-aldex_polygon_filt = aldex_polygon %>% filter(kw.eBH<0.05)
-
-#write.csv(aldex_polygon_filt, "aldex_polygon_filt.csv")
-
-aldex_dry = aldex(tab_polygon_dry, conditions = vector_polygon_dry, mc.samples = 128,denom = "all", test = "kw")
-
-aldex_dry_filt = aldex_dry %>% filter(kw.ep < 0.05)
-
-aldex_rainy = aldex(tab_polygon_rainy, conditions = vector_polygon_rainy, mc.samples = 128,denom = "all", test = "kw")
-aldex_rainy_filt = aldex_rainy %>% filter(kw.ep < 0.05)
-
-#write.csv(aldex_rainy_filt, "aldex_rainy_filt.csv")
-
-```
-
-```{r}
-library(ALDEx2) 
-
+#aldex polygon corriendo
+#aldex_polygon = aldex(tab_polygon, conditions = vector_polygon, mc.samples = 128,denom = "all", test = "kw")
 
 #aldex effect of season by polygon
 aldex_p1 = aldex(tab_p1, conditions = vector_p, mc.samples = 128,denom = "all")
@@ -129,6 +215,8 @@ aldex_p5_filt = aldex_p5 %>% filter(wi.ep <0.05)
 
 aldex_p6 = aldex(tab_p6, conditions = vector_p, mc.samples = 128,denom = "all")
 aldex_p6_filt = aldex_p6 %>% filter(wi.ep <0.05)
+
+
 
 ```
 
@@ -334,11 +422,67 @@ all=plot_grid(all1,all2)
 
 alls=plot_grid(leg, all, ncol = 1, rel_heights = c(0.1,1))
 
-ggsave("aldex_polss.png", plot = alls, device = "png", width = 14, height = 16) 
+ggsave("aldex_polss.png", plot = alls, device = "png", width = 14, height = 16)
 
 ```
 
+```{r}
+aldex_polp = function(x, conds){
+aldex = aldex(x, conditions = conds, mc.samples = 128,denom = "all")
+aldex_filt = aldex %>% filter(wi.ep <0.05)
+return(aldex_filt)
+}
+
+aldex_polp2 = function(x, conds){
+aldex = aldex(x, conditions = conds, mc.samples = 128,denom = "all")
+aldex_filt = aldex %>% filter(wi.eBH <0.05)
+return(aldex_filt)
+}
+library(dplyr)
+library(purrr)
+
+# Listar las tablas y sus correspondientes vectores
+datos_list <- list(
+  tab_p12 = tab_p12,
+  tab_p13 = tab_p13,
+  tab_p14 = tab_p14,
+  tab_p15 = tab_p15,
+  tab_p16 = tab_p16,
+  tab_p23 = tab_p23,
+  tab_p24 = tab_p24,
+  tab_p25 = tab_p25,
+  tab_p26 = tab_p26,
+  tab_p34 = tab_p34,
+  tab_p35 = tab_p35,
+  tab_p36 = tab_p36,
+  tab_p45 = tab_p45,
+  tab_p46 = tab_p46,
+  tab_p56 = tab_p56
+)
+
+# Listar los vectores de condiciones
+vectores_list <- list(
+  vector_p12 = vector_p12,
+  vector_p13 = vector_p13,
+  vector_p14 = vector_p14,
+  vector_p15 = vector_p15,
+  vector_p16 = vector_p16,
+  vector_p23 = vector_p23,
+  vector_p24 = vector_p24,
+  vector_p25 = vector_p25,
+  vector_p26 = vector_p26,
+  vector_p34 = vector_p34,
+  vector_p35 = vector_p35,
+  vector_p36 = vector_p36,
+  vector_p45 = vector_p45,
+  vector_p46 = vector_p46,
+  vector_p56 = vector_p56
+)
+
+# Aplicar la función aldex_polp a cada conjunto de datos y sus correspondientes vectores
+resultados <- map2(datos_list, vectores_list, aldex_polp)
+resultados2 <- map2(datos_list, vectores_list, aldex_polp2)
 
 
-
+```
 
