@@ -84,60 +84,60 @@ vector_p = c(rep("Dry", 6), rep("Rainy", 6))
 
 ```{r}
 #polygon-paired
-tab_p12 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P2") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p12 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P2") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 vector_p12 = c(rep("P1", 12), rep("P2", 12))
 
 
-tab_p13 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P3") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p13 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P3") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p13 = c(rep("P1", 12), rep("P3", 12))
 
 
-tab_p14 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P4") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p14 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P4") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p14 = c(rep("P1", 12), rep("P4", 12))
 
 
-tab_p15 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P5") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p15 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P5") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p15 = c(rep("P1", 12), rep("P5", 12))
 
-tab_p16 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p16 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P6") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p16 = c(rep("P1", 12), rep("P6", 12))
 
 
-tab_p23 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P3") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p23 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P3") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 vector_p23 = c(rep("P2", 12), rep("P3", 12))
 
 
 
-tab_p24 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P4") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p24 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P4") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p24 = c(rep("P2", 12), rep("P4", 12))
 
 
-tab_p25 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P5") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p25 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P5") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p25 = c(rep("P2", 12), rep("P5", 12))
 
-tab_p26 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p26 = tab_order_metadata %>% filter(Poligono=="P2"|Poligono=="P6") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
@@ -145,20 +145,20 @@ vector_p26 = c(rep("P2", 12), rep("P6", 12))
 
 
 
-tab_p34 = tab_order_metadata %>% filter(Poligono=="P3"|Poligono=="P4") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p34 = tab_order_metadata %>% filter(Poligono=="P3"|Poligono=="P4") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p34 = c(rep("P3", 12), rep("P4", 12))
 
 
-tab_p35 = tab_order_metadata %>% filter(Poligono=="P3"|Poligono=="P5") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p35 = tab_order_metadata %>% filter(Poligono=="P3"|Poligono=="P5") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p35 = c(rep("P3", 12), rep("P5", 12))
 
-tab_p36 = tab_order_metadata %>% filter(Poligono=="P3"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p36 = tab_order_metadata %>% filter(Poligono=="P3"|Poligono=="P6") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
@@ -166,19 +166,19 @@ vector_p36 = c(rep("P3", 12), rep("P6", 12))
 
 
 
-tab_p45 = tab_order_metadata %>% filter(Poligono=="P4"|Poligono=="P5") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p45 = tab_order_metadata %>% filter(Poligono=="P4"|Poligono=="P5") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p45 = c(rep("P4", 12), rep("P5", 12))
 
-tab_p46 = tab_order_metadata %>% filter(Poligono=="P4"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p46 = tab_order_metadata %>% filter(Poligono=="P4"|Poligono=="P6") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
 vector_p46 = c(rep("P4", 12), rep("P6", 12))
 
-tab_p56 = tab_order_metadata %>% filter(Poligono=="P5"|Poligono=="P6") %>% arrange(Season)%>%dplyr::select(-overhang:-LIB) %>% 
+tab_p56 = tab_order_metadata %>% filter(Poligono=="P5"|Poligono=="P6") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
   filter(rowSums(.) != 0)
 
@@ -429,9 +429,11 @@ ggsave("aldex_polss.png", plot = alls, device = "png", width = 14, height = 16)
 ```{r}
 aldex_polp = function(x, conds){
 aldex = aldex(x, conditions = conds, mc.samples = 128,denom = "all")
-aldex_filt = aldex %>% filter(wi.ep <0.05)
-return(aldex_filt)
+#aldex_filt = aldex %>% filter(wi.ep <0.05)
+return(aldex)
 }
+
+#x = aldex_polp(x=tab_p4, conds = vector_p)
 
 aldex_polp2 = function(x, conds){
 aldex = aldex(x, conditions = conds, mc.samples = 128,denom = "all")
@@ -481,7 +483,7 @@ vectores_list <- list(
 
 # Aplicar la función aldex_polp a cada conjunto de datos y sus correspondientes vectores
 resultados <- map2(datos_list, vectores_list, aldex_polp)
-resultados2 <- map2(datos_list, vectores_list, aldex_polp2)
+#resultados2 <- map2(datos_list, vectores_list, aldex_polp2)
 
 
 ```
@@ -490,5 +492,35 @@ resultados2 <- map2(datos_list, vectores_list, aldex_polp2)
 source("../Scripts/aldex_plotp.R")
 
 aldex.plotp(x.all, type = "volcano")
+```
+
+```{r}
+
+library(cowplot)
+
+pp1= plot_volcano(x = resultados[[1]], taxa = taxa)
+pp2= plot_volcano(x = resultados[[2]], taxa = taxa)
+pp3= plot_volcano(x = resultados[[3]], taxa = taxa)
+pp4= plot_volcano(x = resultados[[4]], taxa = taxa)
+pp5= plot_volcano(x = resultados[[5]], taxa = taxa)
+pp6= plot_volcano(x = resultados[[6]], taxa = taxa)
+pp7= plot_volcano(x = resultados[[7]], taxa = taxa)
+pp8= plot_volcano(x = resultados[[8]], taxa = taxa)
+pp9= plot_volcano(x = resultados[[9]], taxa = taxa)
+pp10= plot_volcano(x = resultados[[10]], taxa = taxa)
+pp11= plot_volcano(x = resultados[[11]], taxa = taxa)
+pp12= plot_volcano(x = resultados[[12]], taxa = taxa)
+pp13= plot_volcano(x = resultados[[13]], taxa = taxa)
+pp14= plot_volcano(x = resultados[[14]], taxa = taxa)
+pp15= plot_volcano(x = resultados[[15]], taxa = taxa)
+
+
+pps=plot_grid(pp1, pp2, pp3, pp4, pp5,
+          pp6, pp7, pp8, pp9, pp10, 
+          pp11, pp12, pp13, pp14, pp15, ncol = 3, nrow = 5)
+
+
+ggsave("aldex_polss_volcano_bh.png", plot = pps, device = "png", width = 14, height = 19)
+
 ```
 
