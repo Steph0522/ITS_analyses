@@ -3,16 +3,16 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 
-plot_volcano <- function(x, taxa, cutoff.pval = 0.05) {
-  # Asegúrate de que 'wi.eBH' esté definido
-  if (!"wi.eBH" %in% colnames(x)) {
-    stop("El dataframe debe contener la columna 'wi.eBH'.")
+plot_volcanop <- function(x, taxa, cutoff.pval = 0.05) {
+  # Asegúrate de que 'wi.ep' esté definido
+  if (!"wi.ep" %in% colnames(x)) {
+    stop("El dataframe debe contener la columna 'wi.ep'.")
   }
   
   # Calcula p.add y all.p
-  p.add <- min(x$wi.eBH[x$wi.eBH > 0]) / 10
-  called <- x$wi.eBH <= cutoff.pval
-  x$all.p <- x$wi.eBH + p.add
+  p.add <- min(x$wi.ep[x$wi.ep > 0]) / 10
+  called <- x$wi.ep <= cutoff.pval
+  x$all.p <- x$wi.ep + p.add
   
   # Crea una nueva columna para el log10 de p-values
   x$log_pvalue <- -1 * log10(x$all.p)

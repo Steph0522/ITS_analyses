@@ -187,203 +187,30 @@ vector_p56 = c(rep("P5", 12), rep("P6", 12))
 ```
 
 ```{r}
+source("../Scripts/plot_volcanop.R")
 library(ALDEx2) 
 
-#aldex season no salió nada
-#aldex_season = aldex(tab_season, conditions = vector_season, mc.samples = 128,denom = "all")
-#aldex_season_filt = aldex_season %>% filter(wi.ep < 0.05)
-
-#aldex polygon corriendo
-#aldex_polygon = aldex(tab_polygon, conditions = vector_polygon, mc.samples = 128,denom = "all", test = "kw")
-
-#aldex effect of season by polygon
 aldex_p1 = aldex(tab_p1, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p1_filt = aldex_p1 %>% filter(wi.ep <0.05)
 
 aldex_p2 = aldex(tab_p2, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p2_filt = aldex_p2 %>% filter(wi.ep <0.05)
 
 aldex_p3 = aldex(tab_p3, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p3_filt = aldex_p3 %>% filter(wi.ep <0.05)
 
 aldex_p4 = aldex(tab_p4, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p4_filt = aldex_p4 %>% filter(wi.ep <0.05)
 
 aldex_p5 = aldex(tab_p5, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p5_filt = aldex_p5 %>% filter(wi.ep <0.05)
-
 
 aldex_p6 = aldex(tab_p6, conditions = vector_p, mc.samples = 128,denom = "all")
-aldex_p6_filt = aldex_p6 %>% filter(wi.ep <0.05)
-
-
 
 ```
 
 ```{r}
-p1=aldex_p1_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
-    mutate(taxa = case_when(
-    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
-    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
-    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
-    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
-    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
-    TRUE ~ NA_character_
-  )) %>%
-  mutate(type = case_when(
-    diff.btw < 0 ~ "Dry",
-    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
- mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
-  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col(width = 0.5)+coord_flip()+
-  scale_fill_manual(values = c("#2887a1","#A16928"))+
-  theme(axis.text.y = element_text(face = "italic"))+
-  xlab("ASV")+
-  labs(fill = NULL) +  
-  theme(legend.position = "top",  
-        legend.box = "horizontal") +  
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
-
-
-
-p2=aldex_p2_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
-    mutate(taxa = case_when(
-    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
-    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
-    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
-    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
-    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
-    TRUE ~ NA_character_
-  )) %>%
-  mutate(type = case_when(
-    diff.btw < 0 ~ "Dry",
-    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
- mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
-  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
-  scale_fill_manual(values = c("#A16928","#2887a1"))+
-  theme(axis.text.y = element_text(face = "italic"))+
-  xlab("ASV")+
-  labs(fill = NULL) +  
-  theme(legend.position = "top",  
-        legend.box = "horizontal") +  
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
-
-
-p3=aldex_p3_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
-    mutate(taxa = case_when(
-    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
-    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
-    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
-    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
-    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
-    TRUE ~ NA_character_
-  )) %>%
-  filter(!taxa=="k__Fungi") %>% 
-  mutate(type = case_when(
-    diff.btw < 0 ~ "Dry",
-    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
- mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
-  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
-  scale_fill_manual(values = c("#A16928","#2887a1"))+
-  theme(axis.text.y = element_text(face = "italic"))+
-  xlab("ASV")+
-  labs(fill = NULL) +  
-  theme(legend.position = "top",  
-        legend.box = "horizontal") +  
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
-
-
-p4=aldex_p4_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
-    mutate(taxa = case_when(
-    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
-    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
-    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
-    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
-    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
-    TRUE ~ NA_character_
-  )) %>%
-  filter(!taxa=="k__Fungi") %>%
-  group_by(taxa) %>%
-  mutate(repeat_count = row_number() * (n() > 1)) %>%
-  ungroup() %>%
-  mutate(taxa = ifelse(repeat_count > 0, paste0(taxa,repeat_count), taxa)) %>%
-  dplyr::select(-repeat_count)  %>%   
-  mutate(type = case_when(
-    diff.btw < 0 ~ "Dry",
-    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
- mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
-  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
-  scale_fill_manual(values = c("#A16928","#2887a1"))+
-  theme(axis.text.y = element_text(face = "italic"))+
-  xlab("ASV")+
-  labs(fill = NULL) +  
-  theme(legend.position = "top",  
-        legend.box = "horizontal") +  
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
-
-
-
-
-
-p5=aldex_p5_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
-    mutate(taxa = case_when(
-    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
-    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
-    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
-    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
-    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
-    TRUE ~ NA_character_
-  )) %>%
-  filter(!taxa=="k__Fungi") %>%
-  group_by(taxa) %>%
-  mutate(repeat_count = row_number() * (n() > 1)) %>%
-  ungroup() %>%
-  mutate(taxa = ifelse(repeat_count > 0, paste0(taxa,repeat_count), taxa)) %>%
-  dplyr::select(-repeat_count)  %>%   
-  mutate(type = case_when(
-    diff.btw < 0 ~ "Dry",
-    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
- mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
-  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
-  scale_fill_manual(values = c("#A16928","#2887a1"))+
-  theme(axis.text.y = element_text(face = "italic"))+
-  xlab("ASV")+
-  labs(fill = NULL) +  
-  theme(legend.position = "top",  
-        legend.box = "horizontal") +  
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
-
-
-
-
-p6=aldex_p6_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa) %>%
-    mutate(taxa = case_when(
-    str_detect(Taxon, "s__") ~ str_extract(Taxon, "(?<=s__)[^;]+"),  
-    str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
-    str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
-    str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
-    str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
-    TRUE ~ NA_character_
-  )) %>%
-  mutate(taxa = ifelse(taxa == "Wilcoxina_rehmii", paste0(taxa, "*"), taxa)) %>% 
-  filter(!taxa=="k__Fungi") %>%
-  group_by(taxa) %>%
-  mutate(repeat_count = row_number() * (n() > 1)) %>%
-  ungroup() %>%
-  mutate(taxa = ifelse(repeat_count > 0, paste0(taxa,repeat_count), taxa)) %>%
-  dplyr::select(-repeat_count)  %>%   
-  mutate(type = case_when(
-    diff.btw < 0 ~ "Dry",
-    TRUE ~ "Rainy"    )) %>% arrange(-diff.btw)%>%
- mutate(taxa = fct_reorder(taxa, desc(diff.btw))) %>% 
-  ggplot(aes(y=diff.btw, x=taxa, fill=type))+geom_col()+coord_flip()+
-  scale_fill_manual(values = c("#2887a1"))+
-  theme(axis.text.y = element_text(face = "italic"))+
-  xlab("ASV")+
-  labs(fill = NULL) +  
-  theme(legend.position = "top",  
-        legend.box = "horizontal",
-         axis.text.x = element_text(hjust = 1) ) +  
-  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
+p1= plot_volcanop(aldex_p1, taxa)
+p2= plot_volcanop(aldex_p2, taxa)
+p3= plot_volcanop(aldex_p3, taxa)
+p4= plot_volcanop(aldex_p4, taxa)
+p5= plot_volcanop(aldex_p5, taxa)
+p6= plot_volcanop(aldex_p6, taxa)
 
 ```
 
@@ -391,38 +218,16 @@ p6=aldex_p6_filt %>% rownames_to_column(var = "Feature.ID") %>% inner_join(taxa)
 ```{r}
 library(cowplot)
 
-p=   aldex_p2_filt  %>% rownames_to_column(var = "ID") %>% 
-  mutate(type = case_when(
-    diff.btw < 0 ~ "Dry",
-    TRUE ~ "Rainy"    ))%>% 
-  ggplot(aes(y=diff.btw, x=ID, fill=type))+geom_col()+
-  scale_fill_manual(name="",values = c("#A16928","#2887a1"))+
-    guides(fill = guide_legend(nrow = 1, byrow = TRUE))+theme(  
-      legend.box = "horizontal" ,
-      legend.title = element_text(hjust = 0.5),  
-        legend.spacing.x = unit(0.5, 'cm'))
+all=plot_grid(p1 +xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
+              p2+xlab("")+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
+              p3 +xlab("")+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), 
+              p4+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), 
+              p5+ ylab("")+theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
+              p6+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), 
+              ncol = 2, nrow = 3, align = "hv", labels = "AUTO")
 
 
-leg <- cowplot::get_legend(p)
-
-
-all1=plot_grid(p1+theme(legend.position = "none",axis.title.x = element_blank()),
-          p2+theme(legend.position = "none", axis.title.x = element_blank()),
-          p3+theme(legend.position = "none"), ncol =1, align = "v", 
-          labels = c("A) P1", "C) P2", "E) P3"), label_x = -0.03)
-
-all2=plot_grid(p4+theme(legend.position = "none", axis.title = element_blank()),
-          p5+theme(legend.position = "none", axis.title = element_blank()),
-          p6+theme(legend.position = "none", axis.title.y = element_blank()), ncol =1,
-          align = "v",labels = c("B) P4", "D) P5", "F) P6"),label_x = -0.05)
-
-
-
-all=plot_grid(all1,all2)
-
-alls=plot_grid(leg, all, ncol = 1, rel_heights = c(0.1,1))
-
-ggsave("aldex_polss.png", plot = alls, device = "png", width = 14, height = 16)
+ggsave("../Plots/aldex_polss.png", plot = all, device = "png", width = 8, height = 10)
 
 ```
 
@@ -489,9 +294,9 @@ resultados <- map2(datos_list, vectores_list, aldex_polp)
 ```
 
 ```{r}
-source("../Scripts/aldex_plotp.R")
+library(tidyverse)
+source("../Scripts/plot_volcano.R")
 
-aldex.plotp(x.all, type = "volcano")
 ```
 
 ```{r}
@@ -515,12 +320,14 @@ pp14= plot_volcano(x = resultados[[14]], taxa = taxa)
 pp15= plot_volcano(x = resultados[[15]], taxa = taxa)
 
 
-pps=plot_grid(pp1, pp2, pp3, pp4, pp5,
-          pp6, pp7, pp8, pp9, pp10, 
-          pp11, pp12, pp13, pp14, pp15, ncol = 3, nrow = 5)
+pps=plot_grid(pp1+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp2+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp3+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.1, 0.01, 0.01), "cm")), 
+              pp4+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp5+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm"))+xlab(""), pp6+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), 
+              pp7+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp8+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp9+xlab("")+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
+              pp10+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),pp11+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp12+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm"))+xlab(""), 
+              pp13+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),pp14+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp15+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), ncol = 3, nrow = 5, align = "hv", labels = "AUTO")
 
 
-ggsave("aldex_polss_volcano_bh.png", plot = pps, device = "png", width = 14, height = 19)
+ggsave("../Plots/aldex_polss_volcano_bh.png", plot = pps, device = "png", width = 11, height = 13, dpi = 300)
 
 ```
 
