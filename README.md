@@ -1,4 +1,4 @@
 # ITS_corredor
 
 Reporte de resultados comparando worflows de ITS:
-https://steph0522.github.io/ITS_analyses/Scripts/resume_final_mod.html
+https://github.com/Steph0522/ITS_analyses/blob/main/Code/index.html
