@@ -4,6 +4,10 @@ output: html_document
 date: "2024-05-16"
 ---
 
+# Alpha diversity - rarified
+
+
+
 -   Load files and packages
 
 ```{r, message=FALSE, warning=FALSE}
@@ -65,80 +69,8 @@ qsa<- q0a %>% full_join(q1a) %>% full_join(q2a) %>% pivot_longer(
 ```
 
 
-```{r}
-#install.packages("ggpubr")
-library(ggpubr)
-depth<- read.delim("../Data/depth.txt")
 
-q0_data<- q0 %>% dplyr::rename("q0"="q") %>% dplyr::select(-order)
-q1_data<- q1 %>% dplyr::rename("q1"="q") %>% dplyr::select(-order)
-q2_data<- q2 %>% dplyr::rename("q2"="q") %>% dplyr::select(-order)
-
-q_data<- q0_data %>% inner_join(q1_data) %>% inner_join(q2_data) %>% 
-  inner_join(depth, by = c("SampleID"="Sample.ID"))
-
-
-q0_vs_depth_fltr <- ggscatter(q_data , 
-                         x = "Frequency", 
-                         y = "q0", 
-                         xlab= "Sequencing depth (number of reads)",
-                         ylab = "q=0",
-                         #ylab="Alpha diversity q=0 (effective number of total ASVs)",
-   add = "reg.line",  # Add regression line
-   add.params = list(color = "#B03A2E", fill = "#566573"), # Customize reg. line
-   conf.int = TRUE, # Add confidence interval
-   cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
-   cor.coeff.args = list(method = "pearson", label.x = 3, label.sep = "\n")
-   )+theme_grey()+
-  theme(legend.title = element_blank(), legend.position = "none")+ labs(y=expression(paste(italic("q"), "=0", " (number of total OTUs/OTUs)")))
-
-q1_vs_depth_fltr <- ggscatter(q_data, 
-                         x = "Frequency", 
-                         y = "q1", 
-                         xlab= "Sequencing depth (number of reads)",
-                         ylab = "q=1",
-                         #ylab="Alpha diversity q=1 (effective number of total ASVs)",
-   add = "reg.line",  # Add regression line
-   add.params = list(color = "#B03A2E", fill = "#566573"), # Customize reg. line
-   conf.int = TRUE, # Add confidence interval
-   cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
-   cor.coeff.args = list(method = "pearson", label.x = 3, label.sep = "\n")
-   )+theme_grey()+
-  theme(legend.title = element_blank(), legend.position = "none")+ labs(y=expression(paste(italic("q"), "=1", " (number of frequent OTUs/OTUs)")))
-
-
-
-q2_vs_depth_fltr <- ggscatter(q_data, 
-                         x = "Frequency", 
-                         y = "q2", 
-                         xlab= "Sequencing depth (number of reads)",
-                         ylab = "q=2",
-                         #ylab="Alpha diversity q=2 (effective number of total ASVs)",
-   add = "reg.line",  # Add regression line
-   add.params = list(color = "#B03A2E", fill = "#566573"), # Customize reg. line
-   conf.int = TRUE, # Add confidence interval
-   cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
-   cor.coeff.args = list(method = "pearson", label.x = 3, label.sep = "\n")
-   )+theme_grey()+
-  theme(legend.title = element_blank(), legend.position = "none")+ labs(y=expression(paste(italic("q"), "=2", " (number of dominant OTUs/OTUs)")))
-
-
-library(ggplot2)
-library(cowplot)
-
-#save plots
-
-#Combine plot
-title_corr_plot <- ggdraw() + draw_label("Alpha diversity depth correlation with samples")
-correlation_plot_q012_fltr <- plot_grid(q0_vs_depth_fltr,q1_vs_depth_fltr,q2_vs_depth_fltr, labels = c("A", "B", "C"), nrow = 1, rel_heights = c(1, 1, 1))
-correlation_plot_q012_fltr
-
-ggsave('../Plots/alpha_corr.png', width = 11, height = 6, dpi = 300, plot =correlation_plot_q012_fltr)
-
-
-```
-
-```{r}
+```{r, message=FALSE, warning=FALSE}
 lm.q0<-qs %>% filter(order=="q0") 
 model0<- lm(val ~ Poligono*Season, data = lm.q0)
 car::leveneTest(val ~ Poligono*Season, data = lm.q0)
@@ -187,7 +119,6 @@ let2<-agricolae::HSD.test(modelinteract2, "interact", console = TRUE)$groups%>%
 ```
 
 ```{r, message=FALSE, warning=FALSE}
-
 library(ggh4x)
 library(rcartocolor)
 #colors<-viridis::turbo(6, alpha = 1, begin = 0, end = 1, direction = 1)
@@ -269,7 +200,7 @@ b <- qs %>%
      strip.background.x = element_rect(colour = "black", linetype = "solid", size = 1))+
   theme(strip.text.x = element_blank())
  
-b
+
 #strip.background = element_rect(color="black", size=1.5, linetype="solid" ))
 
 labels <- let2 %>% rownames_to_column(var = "interact") %>% 
@@ -306,11 +237,10 @@ c <- qs %>%
      color="grey", fill="black", size=1, linetype="solid"),
      strip.background.x = element_rect(colour = "black", linetype = "solid", size = 1))+
   theme(strip.text.x = element_blank())
- 
+```
 
- 
-c
 
+```{r, message=FALSE, warning=FALSE, fig.align='center', fig.height=11, fig.width=11}
 library(cowplot)
 
 
@@ -321,6 +251,8 @@ alpha<- plot_grid(a + theme(legend.position = "none", axis.title.x = element_bla
                   c+ theme(legend.position = "none")+ylab(""),
                   labels = c("A", "B", "C"),
                   ncol = 1)
+
+alpha
 
 ggsave('../Plots/alpha_rar.png', width = 11, height = 11, dpi = 300, plot =alpha)
 

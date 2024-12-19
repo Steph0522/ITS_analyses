@@ -5,10 +5,10 @@ date: "2024-06-03"
 ---
 
 
-## BETA DIVERSIDAD
+# NMDS and perMANOVA - BETA
 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=7, fig.cap="Fig 7. PCA's todos los métodos"}
+```{r, message=FALSE, warning=FALSE, fig.width=7}
 library(qiime2R)
 library(tidyverse)
 library(ALDEx2)
@@ -40,11 +40,17 @@ mat<- dist(aldex.clr.transform.data, method = "euclidean")
 
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE,eval=FALSE}
 #nmds using aitchison
 
 nmds1=metaMDS(t(aldex.clr.transform@reads), distance = "aitchison",trymax = 500, k = 2)
+```
 
+```{r, echo=FALSE}
+nmds1= readRDS("../Data/nmds1.RDS")
+```
+
+```{r, message=FALSE, warning=FALSE}
 nmds11= nmds1 %>%  
   vegan:::scores.metaMDS(display = "sites") %>%
   as_tibble(., rownames = "sample")%>%
@@ -66,9 +72,8 @@ permdisp2<- permutest( permdisp, permutations = 999)
 permdisp2
 
 
-perm<- how(nperm = 999)
 perm<-adonis2(t(aldex.clr.transform@reads) ~Poligono*Season, data = tab, method = 
-                  "aitchison", permutations =perm)
+                  "aitchison", permutations =999, by = "terms")
 perm
  
 titles<- paste0("adonis:", " Polygon, F=", round(perm$F[1], digits = 2), ", p-value=", round(perm$`Pr(>F)`[1], digits=3), ";", " Season, F=", round(perm$F[2], digits = 2), ", p-value=", round(perm$`Pr(>F)`[2], digits=3), ";", " \nPolygon*Season, F=", round(perm$F[3], digits = 2), ", p-value=", round(perm$`Pr(>F)`[3], digits=3))

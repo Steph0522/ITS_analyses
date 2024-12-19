@@ -4,9 +4,11 @@ output: html_document
 date: "2024-06-03"
 ---
 
+# ALDEx2
+
 - Load data and packages and format
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(qiime2R)
 library(ComplexHeatmap)
@@ -82,7 +84,7 @@ vector_p = c(rep("Dry", 6), rep("Rainy", 6))
 ```
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 #polygon-paired
 tab_p12 = tab_order_metadata %>% filter(Poligono=="P1"|Poligono=="P2") %>% arrange(Poligono)%>%dplyr::select(-overhang:-LIB) %>% 
   column_to_rownames(var = "SampleID") %>% t() %>% as.data.frame() %>% mutate_all(as.numeric) %>%
@@ -188,6 +190,10 @@ vector_p56 = c(rep("P5", 12), rep("P6", 12))
 
 ```{r}
 source("../Scripts/plot_volcanop.R")
+```
+
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
 library(ALDEx2) 
 
 aldex_p1 = aldex(tab_p1, conditions = vector_p, mc.samples = 128,denom = "all")
@@ -204,6 +210,17 @@ aldex_p6 = aldex(tab_p6, conditions = vector_p, mc.samples = 128,denom = "all")
 
 ```
 
+```{r, echo=FALSE}
+aldex_p1 <- readRDS("../Data/aldex_p1.RDS")
+aldex_p2 <- readRDS("../Data/aldex_p2.RDS")
+aldex_p3 <- readRDS("../Data/aldex_p3.RDS")
+aldex_p4 <- readRDS("../Data/aldex_p4.RDS")
+aldex_p5 <- readRDS("../Data/aldex_p5.RDS")
+aldex_p6 <- readRDS("../Data/aldex_p6.RDS")
+
+```
+
+
 ```{r}
 p1= plot_volcanop(aldex_p1, taxa)
 p2= plot_volcanop(aldex_p2, taxa)
@@ -215,7 +232,7 @@ p6= plot_volcanop(aldex_p6, taxa)
 ```
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, fig.align='center', fig.height=10, fig.width=8}
 library(cowplot)
 
 all=plot_grid(p1 +xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
@@ -225,6 +242,8 @@ all=plot_grid(p1 +xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), 
               p5+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
               p6+ ylab("")+theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), 
               ncol = 2, nrow = 3, align = "hv", labels = "AUTO")
+
+all
 
 
 ggsave("../Plots/aldex_polss.png", plot = all, device = "png", width = 8, height = 10)
@@ -285,7 +304,10 @@ vectores_list <- list(
   vector_p46 = vector_p46,
   vector_p56 = vector_p56
 )
+```
 
+
+```{r, eval=FALSE}
 # Aplicar la función aldex_polp a cada conjunto de datos y sus correspondientes vectores
 resultados <- map2(datos_list, vectores_list, aldex_polp)
 #resultados2 <- map2(datos_list, vectores_list, aldex_polp2)
@@ -299,7 +321,12 @@ source("../Scripts/plot_volcano.R")
 
 ```
 
-```{r}
+```{r, echo=FALSE}
+#saveRDS(resultados, "../Data/resultados.RDS")
+resultados = readRDS("../Data/resultados.RDS")
+```
+
+```{r, message=FALSE, warning=FALSE, fig.align='center', fig.height=13, fig.width=11}
 
 library(cowplot)
 
@@ -325,6 +352,9 @@ pps=plot_grid(pp1+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), 
               pp7+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp8+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp9+xlab("")+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
               pp10+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),pp11+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp12+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm"))+xlab(""), 
               pp13+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),pp14+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp15+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), ncol = 3, nrow = 5, align = "hv", labels = "AUTO")
+
+
+pps
 
 
 ggsave("../Plots/aldex_polss_volcano_bh.png", plot = pps, device = "png", width = 11, height = 13, dpi = 300)

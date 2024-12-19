@@ -1,0 +1,62 @@
+---
+title: "Spatio-temporal dynamics, composition, diversity and ecological processes shaping fungal assemblages in forest soils along the transect of Iztaccíhuatl-Popocatépetl (PNIP) and La Malinche (PNLM) National Parks"
+author:
+- name: Stephanie Hereira-Pacheco
+  affiliation: Universidad Autónoma de Tlaxcala
+  email: sehereirap@uatx.mx
+date: "`r format(Sys.time(), '%d - %m - %Y')`"
+output:
+  html_document:
+    theme: journal
+    highlight: kate
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r child = './Bioinformatics.Rmd'}
+```
+
+```{r child = './physico.Rmd'}
+```
+
+```{r child = './physico2.Rmd'}
+```
+
+```{r child = './alpha.Rmd'}
+```
+
+```{r child = './alpha_rar.Rmd'}
+```
+
+```{r child = './heatmap.Rmd'}
+```
+
+```{r child = './aldex.Rmd'}
+
+```
+
+
+```{r child = './beta_final.Rmd'}
+
+```
+
+```{r child = './beta-partition.Rmd'}
+
+```
+
+```{r child = './turnover_seasonal.Rmd'}
+
+```
+```{r child = './spatial-turnover.Rmd'}
+
+```
+
+```{r child = './null.Rmd'}
+
+```
+
+

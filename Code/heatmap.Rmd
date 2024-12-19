@@ -4,9 +4,11 @@ output: html_document
 date: "2024-06-03"
 ---
 
+# Heatmap
+
 - Load data and packages and format
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(qiime2R)
 library(ComplexHeatmap)
@@ -129,7 +131,7 @@ merge_data<- data_fungi_order %>% mutate(Genus=case_when(
 
 - Constructing data and annotations for heatmap
 
-```{r}
+```{r, fig.width=7, fig.height=8, fig.align='center'}
 #annotatio seccion y origen (columnas)
 annotation_columns<- data.frame(id=colnames(merge_data)) 
 rownames(annotation_columns) <- colnames(heatmap)
@@ -421,7 +423,7 @@ heats<-ComplexHeatmap::Heatmap(
 column_names_centered = TRUE,
  column_names_gp = gpar(fontsize=9, fontface="bold"))
 
-heats
+
 
 
 

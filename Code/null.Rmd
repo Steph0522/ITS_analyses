@@ -4,7 +4,9 @@ output: html_document
 date: "2024-06-03"
 ---
 
-```{r}
+# incidence-based null approach
+
+```{r, message=FALSE, warning=FALSE}
 # Incidence-based Raup-Crick beta-diversity
 library(qiime2R)
 library(tidyverse)
@@ -95,9 +97,10 @@ abund_table3r = abund_table3r[,which(colSums(abund_table3r) != 0)]
 abund_table4r = abund_table4r[,which(colSums(abund_table4r) != 0)]
 abund_table5r = abund_table5r[,which(colSums(abund_table5r) != 0)]
 abund_table6r = abund_table6r[,which(colSums(abund_table6r) != 0)]
+```
 
 
-
+```{r, eval=FALSE}
 rc1d=QsNullModels::raup_crick(abund_table1d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
 rc2d=QsNullModels::raup_crick(abund_table2d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
 rc3d=QsNullModels::raup_crick(abund_table3d, plot_names_in_col1 = F, reps = 999, as.distance.matrix = T, set_all_species_equal = F)
@@ -186,7 +189,16 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 summary_se3=summarySE(rcc_dmp, measurevar = "value", groupvars = "factor")
 
 # Let's save the summary_se object
-#write.csv(summary_se, "./RC_bact.csv")
+#saveRDS(betadiv, "../Data/betadiv.RDS")
+```
+
+```{r, echo=FALSE}
+
+rcc_dmp=readRDS("../Data/rcc_dmp.RDS")
+```
+
+
+```{r}
 betadiv=rcc_dmp %>% separate(factor, c("Pol", "Season"))
 
 
@@ -237,7 +249,7 @@ plot
 ggsave("../Plots/null-models-otu-rar.png",width = 8, height = 6, dpi = 300, plot = plot, device = "png")
 ```
 
-```{r}
+```{r, eval=FALSE}
 write.csv(rc1d, "../Data/rc1d.csv")
 write.csv(rc2d, "../Data/rc2d.csv")
 write.csv(rc3d, "../Data/rc3d.csv")

@@ -8,10 +8,11 @@ date: "2024-06-03"
 ## BETA DIVERSIDAD
 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=7, fig.cap="Fig 7. PCA's todos los métodos"}
+```{r, message=FALSE, warning=FALSE, fig.width=7}
 library(qiime2R)
 library(tidyverse)
 library(ALDEx2)
+library(rcartocolor)
 
 
 #taxonomys
@@ -55,7 +56,7 @@ tab<-aldex.clr.transform.data %>% as.data.frame() %>% rownames_to_column(
 library(vegan)
 perm<- how(nperm = 999)
 perm<-adonis2(aldex.clr.transform.data~Poligono*Season, data = tab, method = 
-                  "euclidian", permutations =perm)
+                  "euclidian", permutations =perm, by = "terms")
 perm
  
 mat<- dist(aldex.clr.transform.data, method = "euclidean")
@@ -180,7 +181,6 @@ ggsave('../Plots/pca_otus_filt.png', width =8, height = 6, dpi = 300, plot =z)
 ```
 
 ```{r}
-
 nmds1=metaMDS(t(aldex.clr.transform@reads), distance = "aitchison",trymax = 500, k = 2)
 
 nmds11= nmds1 %>%  
@@ -197,11 +197,11 @@ set.seed(124)
 
 tab<-aldex.clr.transform@reads %>% t() %>% as.data.frame() %>% rownames_to_column(
     var = "SampleID") %>% inner_join(metadata)
-perm<- how(nperm = 999)
-perm<-adonis2(t(aldex.clr.transform@reads) ~Poligono*Season, data = tab, method = 
-                  "aitchison", permutations =perm)
+#perm<- how(nperm = 999)
+perm<-adonis2(t(aldex.clr.transform@reads) ~ Poligono*Season, data = tab, method = 
+                  "aitchison", permutations =999, by = "terms")
 perm
- 
+
 mat<- vegdist(t(aldex.clr.transform@reads), method = "aitchison")
 permdisp<-betadisper(mat, tab$Poligono)
 permdisp2<- permutest( permdisp, permutations = 999)
@@ -517,6 +517,7 @@ z <-  ggplot() + geom_point(
 
           #panel.grid.major = element_blank(),
           #panel.grid.minor = element_blank())
+z
 
 
 ggsave('../Plots/nmds_euclidean.aitchison.png', width =8, height = 6, dpi = 300, plot =z)

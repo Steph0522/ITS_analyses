@@ -1,0 +1,251 @@
+---
+title: "ITS WORKFLOW-STANDALONE"
+author: "Steph"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    theme: readable
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    toc_float: true
+---
+# Preprocessing sequences 
+
+
+
+### IMPORTING TO QIIME2
+
+- Make directories for each library
+
+```
+mkdir ITS1
+mkdir ITS2
+mkdir ITS3
+mkdir ITS4
+mkdir ITS5
+mkdir ITS6
+mkdir ITS7
+mkdir ITS8
+mkdir ITS9
+
+```
+
+- Loop to rename forward seqs
+
+```
+for i in ITS* ;do mv ITS*/ITS_*1.fastq.gz  ITS*/forward.fastq.gz ; done
+```
+
+- Loop to rename reverse seqs
+
+```
+for i in ITS* ;do mv ITS*/ITS_*2.fastq.gz  ITS*/reverse.fastq.gz ; done
+```
+
+- Loop to import files to QIIME2
+
+```
+for i in ITS*; do qiime tools import --type MultiplexedPairedEndBarcodeInSequence --input-path $i --output-path $i.qza ; done
+
+```
+### DEMULTIPLEXING WITH CUTADAPT
+
+```
+qiime cutadapt demux-paired\
+  --i-seqs its1.qza\
+  --m-forward-barcodes-file ../../maps_its/its1.txt\
+  --m-forward-barcodes-column BarcodeSequence\
+  --output-dir its1_demux
+
+qiime cutadapt demux-paired\
+  --i-seqs its2.qza\
+  --m-forward-barcodes-file ../../maps_its/its2.txt\
+  --m-forward-barcodes-column BarcodeSequence\
+  --output-dir its2_demux
+
+qiime cutadapt demux-paired\
+  --i-seqs its3.qza\
+  --m-forward-barcodes-file ../../maps_its/its3.txt\
+  --m-forward-barcodes-column BarcodeSequence\
+  --output-dir its3_demux
+
+qiime cutadapt demux-paired\
+  --i-seqs its4.qza --m-forward-barcodes-file ../../maps_its/its4.txt\
+  --m-forward-barcodes-column BarcodeSequence\
+  --output-dir its4_demux
+
+qiime cutadapt demux-paired  --i-seqs its5.qza\
+  --m-forward-barcodes-file ../../maps_its/its5.txt\
+  --m-forward-barcodes-column BarcodeSequence\
+  --output-dir its5_demux
+
+qiime cutadapt demux-paired  --i-seqs its6.qza\
+  --m-forward-barcodes-file ../../maps_its/its6.txt\
+  --m-forward-barcodes-column BarcodeSequence\
+  --output-dir its6_demux
+
+qiime cutadapt demux-paired  --i-seqs its7.qza\
+  --m-forward-barcodes-file ../../maps_its/its7.txt\
+  --m-forward-barcodes-column BarcodeSequence\
+  --output-dir its7_demux
+
+qiime cutadapt demux-paired\
+  --i-seqs its8.qza\
+  --m-forward-barcodes-file ../../maps_its/its8.txt\
+  --m-forward-barcodes-column BarcodeSequence\
+  --output-dir its8_demux
+
+qiime cutadapt demux-paired\
+  --i-seqs its9.qza\
+  --m-forward-barcodes-file ../../maps_its/its9.txt\
+  --m-forward-barcodes-column BarcodeSequence\
+  --output-dir its9_demux
+
+```
+
+### EXPORTING DATA
+
+```
+for i in its*_demux; do qiime tools export  --input-path  $i/per_sample_sequences.qza --output-path  exported_$i; done
+```
+
+
+### ITSXPRESS STANDALONE
+
+- Move all data to one directory and run this bash script:
+
+```{bash, eval=FALSE}
+
+#!/bin/bash
+
+# Set the path to the itsxpress executable
+ITSXPRESS_EXECUTABLE="itsxpress"
+
+# Loop through the files
+for forward_file in *_R1_001.fastq.gz; do
+    # Extract the sample name from the forward file
+    sample_name=$(basename "$forward_file" _R1_001.fastq.gz)
+
+    # Construct the reverse file name
+    reverse_file="${sample_name}_R2_001.fastq.gz"
+
+    # Run itsxpress command
+    $ITSXPRESS_EXECUTABLE --fastq "$forward_file" --fastq2 "$reverse_file" --region ITS2 \
+        --taxa Fungi --log "${sample_name}_logfile.txt" --outfile "${sample_name}_trimmed_reads.fastq.gz" --threads 2
+
+    # Optionally, you can print a message indicating the completion of each iteration
+    echo "Processing $forward_file and $reverse_file"
+done
+```
+
+
+
+### IMPORTING STANDALONE DATA
+
+```
+qiime tools import\
+  --type 'SampleData[SequencesWithQuality]'\
+  --input-path manifest.txt\
+  --output-path single-end-demux-standalone.qza\
+  --input-format SingleEndFastqManifestPhred33V2
+```
+
+
+### OTU's FOR MERGED SEQUENCES
+
+For qiime2-itsxpress data, we have to export and run:
+
+```
+for i in *.fastq.gz; do reformat in=$i out=clean_$i minconsecutivebases=1; done
+```
+This script is from (BBMap)[https://github.com/BioInfoTools/BBMap/blob/master/sh/reformat.sh]
+
+Then import again and run all. This is due to an error of ITSxpress that generates sequences with 0 lentgh. 
+
+
+
+```
+qiime tools import\
+  --type 'SampleData[SequencesWithQuality]'\
+  --input-path manifest_reformat.txt\
+  --output-path single-end-demux-qiime2-reformat.qza\
+  --input-format SingleEndFastqManifestPhred33V2
+```
+
+- Filter by q-score
+
+```
+for i in *;do  qiime quality-filter q-score --i-demux $i --output-dir filterqscore_$i; done
+
+```
+
+
+- Derreplication
+
+```
+for i in filterqscore_*; do qiime vsearch dereplicate-sequences --i-sequences $i/filtered_sequences.qza --output-dir derep_$i;done
+```
+
+
+- Clustering *de novo*
+
+```
+for i in derep_* ; do qiime vsearch cluster-features-de-novo --i-sequences $i/dereplicated_sequences.qza --i-table $i/dereplicated_table.qza --p-perc-identity 0.97 --p-threads 4 --output-dir cluster97_$i; done
+```
+
+- Chimera checking and filter from table
+
+```
+for i in cluster97_*; do qiime vsearch uchime-denovo --i-sequences $i/clustered_sequences.qza --i-table $i/clustered_table.qza --output-dir chimera97_$i;done
+
+```
+
+```
+qiime feature-table filter-features\
+  --i-table cluster97_derep_filterqscore_single-end-demux-qiime2-reformat.qza/clustered_table.qza\
+  --m-metadata-file chimera97_cluster_derep_filterqscore_single-end-demux-qiime2-reformat.qza/nonchimeras.qza  \
+  --o-filtered-table chimera97_cluster_derep_filterqscore_single-end-demux-qiime2-reformat.qza/table97-nonchimeras-qiime2.qza
+
+```
+
+
+- Filtering singletons from table and seqs 
+
+```
+ for i in chimera* ; do qiime feature-table filter-features --i-table $i/table*.qza --p-min-frequency 2 --o-filtered-table $i/filtered_$i ; done
+ ```
+ 
+``` 
+for i in chimera*/; do
+    data_file=$(find $i -name 'nonchimeras*' -type f)
+    table_file=$(find $i -name 'filtered-table*' -type f)
+
+    qiime feature-table filter-seqs \
+        --i-data $data_file \
+        --i-table $table_file \
+        --o-filtered-data ${data_file%.qza}-filtered.qza
+done
+
+```
+
+```
+qiime feature-table summarize \
+  --i-table filtered-table.qza \
+  --o-visualization visualization.qzv
+
+qiime diversity alpha-rarefaction \
+  --i-table filtered-table.qza \
+  --p-max-depth 41834 \
+  --p-min-depth 1 \
+  --p-steps 10 \
+  --p-iterations 10 \
+  --o-visualization visualization-rar.qzv
+
+qiime feature-table rarefy \
+  --i-table filtered-table-2.qza \
+  --p-sampling-depth 2313 \
+  --p-no-with-replacement \
+  --o-rarefied-table rarefied-table.qza
+
+```

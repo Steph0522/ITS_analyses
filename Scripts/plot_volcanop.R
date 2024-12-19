@@ -70,5 +70,5 @@ plot_volcanop <- function(x, taxa, cutoff.pval = 0.05) {
 }
 
 # Uso de la función
- plot_volcano(x = x, taxa = taxa)
+ #lot_volcano(x = x, taxa = taxa)
 

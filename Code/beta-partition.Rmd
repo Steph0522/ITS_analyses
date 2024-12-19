@@ -4,6 +4,8 @@ output: html_document
 date: "2024-07-04"
 ---
 
+# Beta partition
+
 ```{r}
 #beta
 library(tidyverse)

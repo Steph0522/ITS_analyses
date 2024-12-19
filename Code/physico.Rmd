@@ -4,6 +4,9 @@ output: html_document
 date: "2024-05-16"
 ---
 
+# Phycochemical characteristics - Both seasons 
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -52,7 +55,7 @@ cor.table(na.omit(dfs[,1:4]))
 ```
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 #checking normality and non-parametrics
 shapiro.test(env_season$pH)
 shapiro.test(env_season$MO)
@@ -99,7 +102,7 @@ rownames(all.kw)<-c("Season", "Poligon")
 ```
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 #linear models and normality and heterogenity test
 model1<- lm(pH ~ Poligono*Season, data = env_season)
 car::leveneTest(pH ~ Poligono*Season, data = env_season)
@@ -119,7 +122,7 @@ plot(model4, which = 2)
 ```
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 #linear models for test with interaction
 
 library(tidyverse)
@@ -182,7 +185,7 @@ multcomp::cld(object = emmeans4$emmeans, Letters=letters)
 ```
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # Plot the temporal trends of the selected environmental variables over time
 df$Season<-NA
 df$Season<-env_season$Season

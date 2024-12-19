@@ -5,8 +5,9 @@ date: "2024-08-22"
 ---
 
 
+# qps 
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 library(reshape2)
 library(picante)
 library(readxl)
@@ -19,10 +20,11 @@ library(ggvegan)
 library(ggordiplots)
 library(qiime2R)
 library(picante)
+library(rcartocolor)
 ```
 
 
-```{r, eval=FALSE}
+```{r}
 dry<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_secas_all") %>% mutate(Season="Dry")
 wet<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_lluvias_all") %>% mutate(Season="Wet")
 
@@ -55,13 +57,17 @@ dist_p = dist(df_p)
 
 
 abund_table=read_qza("../Data/table_SMOQ_rar.qza")$data #
+
+
+```
+
+
+```{r, eval=FALSE}
 tree = read_qza("../Data/tree_SMOQ_rar/rooted_tree.qza")$data
 phydist <- cophenetic(tree)
 comdis = comdist(t(abund_table), phydist, abundance.weighted = TRUE)
-
 data(phylocom)
 comdist(phylocom$sample, cophenetic(phylocom$phylo), abundance.weighted=TRUE)
-
 # Qantitative Process Estimate (QPE) from Stegen et al. 2013
 # This approach requires that phylogenetic distances (PD) among taxa reflect differences in 
 # the ecological niches they inhabit, thus, carry a phylogenetic signal. 
@@ -1536,6 +1542,8 @@ strip.background = element_rect(color="black", fill="black", size=0.7,linetype="
      strip.text.y = element_text(colour = "white", face = "bold"))+
   xlab("Season, Polygon")
 
+p
+
 ggsave("../Plots/process.png",width = 8, height = 6, dpi = 300, plot = p, device = "png")
 ```
 
@@ -1682,6 +1690,8 @@ plot<- plot_grid(pdry,prainy+ylab(""),
                  labels = c("A", "B"),
                  label_size = 20,
                   ncol = 2)
+
+plot
 
 ggsave('../Plots/spatial.png', width = 15, height = 7, dpi = 300, plot =plot)
 

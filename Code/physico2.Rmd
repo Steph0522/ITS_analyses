@@ -4,20 +4,15 @@ output: html_document
 date: "2024-05-16"
 ---
 
-```{r setup, include=FALSE}
+# Phycochemical characteristics - Only dry season
+
+
+```{r, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 - Loading packages and data    
 ```{r, message=FALSE, warning=FALSE}
-library(reshape2)
-library(picante)
-library(readxl)
-library(tidyverse)
-library(pgirmess)
-library(car)
-library(ggplot2)
-library(ggpubr)
 dry<- read_excel("../Data/Fisicoquimicos.xlsx", sheet = "metadata_secas_all") %>% mutate(Season="Dry")
 
 # select characteristics in both datasets
@@ -99,7 +94,7 @@ plot(model10, which = 2)
 ```
 
 
-```{r}
+```{r, fig.align='center', fig.height=6, fig.width=13}
 # Plot the temporal trends of the selected environmental variables over time
 
 melted_df=melt(df, id=c("Poligono", "Season"))
