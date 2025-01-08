@@ -3,15 +3,16 @@ title: "Polygon turnover "
 output: html_document
 date: "2024-07-03"
 ---
-# spatial turnover
+# Spatial turnover
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 # TURNOVER  SPATIAL
 
 library(qiime2R)
 library(tidyverse)
 library(ggpubr)
 library(hilldiv)
+library(rcartocolor)
 
 table<- read_qza("../Data/table_SMOQ_rar.qza")$data
 metadata<- read.delim("../Data/its_map.txt")
@@ -26,7 +27,7 @@ table_presabs<- tables_presabs %>% as.data.frame() %>% rownames_to_column(var = 
 ```
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 library(betapart)
 library(vegan)
 #betapart function with jaccard 
@@ -41,7 +42,7 @@ jne<- x$beta.jne
 
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 resultado <- metaMDS(jtu, k = 2)
 
 nmds_data <- data.frame(
@@ -163,7 +164,7 @@ z3<-ggplot()+ geom_point(data = y3$df_ord %>% rownames_to_column(var="SampleID")
 
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 #dendograms
 
 library(usedist)
@@ -185,14 +186,14 @@ hcdata3 <- dendro_data_k(dendrogram3, 2)
 
 
 clusters <- dendrogram
-clusters$labels
+#clusters$labels
 clusters=clusters$labels[clusters$order]
 table_all = table[,match(clusters, colnames(table))]
 table_all=table_all %>% t() %>% as.data.frame() %>%  
   rownames_to_column(var = "SampleID") %>% inner_join(metadata)
 
 clusters2 <- dendrogram2
-clusters2$labels
+#clusters2$labels
 clusters2=clusters2$labels[clusters2$order]
 table_dry = table[,match(clusters2, colnames(table))]
 table_dry=table_dry %>% t() %>% as.data.frame() %>%  
@@ -200,7 +201,7 @@ table_dry=table_dry %>% t() %>% as.data.frame() %>%
 
 
 clusters3 <- dendrogram3
-clusters3$labels
+#clusters3$labels
 clusters3=clusters3$labels[clusters3$order]
 table_rainy = table[,match(clusters3, colnames(table))]
 table_rainy=table_rainy %>% t() %>% as.data.frame() %>%  
@@ -269,7 +270,7 @@ p3=p3 + theme_void() + expand_limits(x = c(-1, 32))+
 
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE, fig.width=19, fig.height=8, fig.align='center'}
 z1a = z1+ guides(colour = guide_legend(nrow = 1, title = "Polygon"),
                           shape = guide_legend(nrow = 1) )+
   theme(legend.position = "top",  legend.box = "horizontal")
@@ -290,6 +291,8 @@ ndmss=plot_grid( z2+theme(legend.position = "none"),
 
 all = plot_grid(dendos,ndmss, nrow = 2, rel_heights = c(0.3,1))
 all2 = plot_grid(leg, all, nrow = 2, rel_heights = c(0.1,1))
+
+all2
 
 ggsave('../Plots/spatial_turnover_jaccard.jpg', width =19, height = 8, dpi = 300, plot =all2)
 

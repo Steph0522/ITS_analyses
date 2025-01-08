@@ -4,7 +4,7 @@ output: html_document
 date: "2024-06-03"
 ---
 
-# incidence-based null approach
+# Incidence-based null approach
 
 ```{r, message=FALSE, warning=FALSE}
 # Incidence-based Raup-Crick beta-diversity
@@ -198,7 +198,7 @@ rcc_dmp=readRDS("../Data/rcc_dmp.RDS")
 ```
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 betadiv=rcc_dmp %>% separate(factor, c("Pol", "Season"))
 
 
@@ -249,7 +249,7 @@ plot
 ggsave("../Plots/null-models-otu-rar.png",width = 8, height = 6, dpi = 300, plot = plot, device = "png")
 ```
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, echo=FALSE}
 write.csv(rc1d, "../Data/rc1d.csv")
 write.csv(rc2d, "../Data/rc2d.csv")
 write.csv(rc3d, "../Data/rc3d.csv")

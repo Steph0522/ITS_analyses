@@ -6,7 +6,7 @@ date: "2024-07-04"
 
 # Beta partition
 
-```{r}
+```{r, warning=FALSE, message=FALSE, fig.width=5, fig.height=10, fig.align='center'}
 #beta
 library(tidyverse)
 library(betapart)

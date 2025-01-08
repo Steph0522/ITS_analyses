@@ -5,7 +5,7 @@ date: "2024-08-22"
 ---
 
 
-# qps 
+# QPS
 
 ```{r, warning=FALSE, message=FALSE}
 library(reshape2)
@@ -134,7 +134,7 @@ write.csv(phylo.sig.correlog$mantel.res, "n_signal.csv",  quote=F);
 # 16S dataset (Figure S5)
 
 #pdf("phylo_signals.pdf")
-png("phylo_signals.png", width = 1600, height = 1200, res = 200)
+#png(#"phylo_signals.png", width = 1600, height = 1200, res = 200)
 
 
 par(mfrow=c(2,2))
@@ -163,7 +163,7 @@ plot(phylo.sig[,c(1,3)],
   points(phylo.sig[,c(1,3)][phylo.sig[,4] < 0.05,], pch=21, bg="black", col="black", pty=4) + abline(h=0, lty=2, col="red") +
   title("Total phosphorus")
 
-dev.off()
+#dev.off()
 
 
 ```
@@ -856,7 +856,7 @@ write.csv(as.matrix(rc6ra), "./rc6ra_abundance.csv")
 
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
 library(reshape2)
 
 #1d
@@ -1162,8 +1162,13 @@ selection = selection %>% mutate(selection=percentage_variable+percentage_homog)
 
 ```
 
+```{r, echo=FALSE}
+#write.csv(selection, "../Data/selection.csv")
+selection = read.csv("../Data/selection.csv")
+```
 
-```{r}
+
+```{r, eval=FALSE}
 rc1da = read.csv("../Data/rc1da_abundance.csv", check.names = F)
 #1d
 nosel_1d= as.matrix(rc1da)
@@ -1446,7 +1451,10 @@ noselection = rbind(nosel1d, nosel2d, nosel3d, nosel4d, nosel5d, nosel6d,
 
 noselection = noselection %>% mutate(noselection= percentage_histocont_displimit+percentage_eco_drift+percentage_homog_disp)
 ```
-
+```{r, echo=FALSE}
+#write.csv(noselection, "../Data/noselection.csv")
+noselection = read.csv("../Data/noselection.csv")
+```
 
 ```{r, warning=FALSE, message=FALSE}
 all = selection %>% full_join(noselection, by = "pol")

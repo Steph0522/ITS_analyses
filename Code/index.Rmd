@@ -59,4 +59,7 @@ output:
 
 ```
 
+```{r child = './qps.Rmd'}
+
+```
 

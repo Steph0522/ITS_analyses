@@ -131,7 +131,7 @@ merge_data<- data_fungi_order %>% mutate(Genus=case_when(
 
 - Constructing data and annotations for heatmap
 
-```{r, fig.width=7, fig.height=8, fig.align='center'}
+```{r, fig.width=7, fig.height=8, fig.align='center', warning=FALSE, message=FALSE}
 #annotatio seccion y origen (columnas)
 annotation_columns<- data.frame(id=colnames(merge_data)) 
 rownames(annotation_columns) <- colnames(heatmap)
