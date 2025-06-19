@@ -64,6 +64,9 @@ nmds_data_metadata_dry<- nmds_data %>% rownames_to_column(var = "SampleID") %>%
 nmds_data_metadata_rainy<- nmds_data %>% rownames_to_column(var = "SampleID") %>%
   inner_join(metadata) %>% column_to_rownames(var = "SampleID") %>% filter(Season=="Rainy")
 
+
+
+
 y1<-gg_ordiplot4(nmds_data_metadata, groups = nmds_data_metadata$Poligono, groups2 = nmds_data_metadata$Season, spiders = T, plot = F, scaling = 3)
 
 y2<-gg_ordiplot4(nmds_data_metadata_dry, groups = nmds_data_metadata_dry$Poligono, groups2 = nmds_data_metadata_dry$Season, spiders = T, plot = F, scaling = 3)
@@ -295,6 +298,19 @@ all2 = plot_grid(leg, all, nrow = 2, rel_heights = c(0.1,1))
 all2
 
 ggsave('../Plots/spatial_turnover_jaccard.jpg', width =19, height = 8, dpi = 300, plot =all2)
+
+```
+#permanovas
+
+```{r}
+#all data
+adonis2(jtu~Poligono*Season, data = nmds_data_metadata, permutations =999, by = "terms")
+
+#dry
+adonis2(jtu2~Poligono, data = nmds_data_metadata_dry, permutations =999, by = "terms")
+
+#rainy
+adonis2(jtu3~Poligono, data = nmds_data_metadata_rainy, permutations =999, by = "terms")
 
 ```
 
