@@ -41,7 +41,11 @@ tab_taxa_order = tab_taxa %>% dplyr::select(taxonomy, vector_order)
 
 
 tab_order_metadata = tab_taxa_order %>% column_to_rownames(var = "taxonomy") %>% t() %>% 
-  as.data.frame() %>% rownames_to_column(var = "SampleID") %>% inner_join(metadata) 
+  as.data.frame() %>% rownames_to_column(var = "SampleID") %>% inner_join(metadata) %>%
+  rename_with(
+    ~ str_replace(.x, "_gen_Incertae_sedis", "_Is"),
+    matches("_gen_Incertae_sedis")  # <- Cambiado a matches()
+  )
   
 
 
@@ -193,7 +197,7 @@ vector_p56 = c(rep("P5", 12), rep("P6", 12))
 ```
 
 ```{r}
-source("../Scripts/plot_volcanop.R")
+source("../Scripts/plot_volcanog.R")
 ```
 
 
@@ -226,12 +230,12 @@ aldex_p6 <- readRDS("../Data/aldex_p6.RDS")
 
 
 ```{r}
-p1= plot_volcanop(aldex_p1, taxa)
-p2= plot_volcanop(aldex_p2, taxa)
-p3= plot_volcanop(aldex_p3, taxa)
-p4= plot_volcanop(aldex_p4, taxa)
-p5= plot_volcanop(aldex_p5, taxa)
-p6= plot_volcanop(aldex_p6, taxa)
+p1= plot_volcanog(aldex_p1, taxa)
+p2= plot_volcanog(aldex_p2, taxa)
+p3= plot_volcanog(aldex_p3, taxa)
+p4= plot_volcanog(aldex_p4, taxa)
+p5= plot_volcanog(aldex_p5, taxa)
+p6= plot_volcanog(aldex_p6, taxa)
 
 ```
 
@@ -250,7 +254,7 @@ all=plot_grid(p1 +xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), 
 all
 
 
-ggsave("../Plots/aldex_polss.png", plot = all, device = "png", width = 8, height = 10)
+ggsave("../Plots/aldex_polss_wi.png", plot = all, device = "png", width = 8, height = 10)
 
 ```
 
@@ -321,7 +325,7 @@ resultados <- map2(datos_list, vectores_list, aldex_polp)
 
 ```{r}
 library(tidyverse)
-source("../Scripts/plot_volcano.R")
+source("../Scripts/plot_volcanog.R")
 
 ```
 
@@ -334,21 +338,21 @@ resultados = readRDS("../Data/resultados.RDS")
 
 library(cowplot)
 
-pp1= plot_volcano(x = resultados[[1]], taxa = taxa)
-pp2= plot_volcano(x = resultados[[2]], taxa = taxa)
-pp3= plot_volcano(x = resultados[[3]], taxa = taxa)
-pp4= plot_volcano(x = resultados[[4]], taxa = taxa)
-pp5= plot_volcano(x = resultados[[5]], taxa = taxa)
-pp6= plot_volcano(x = resultados[[6]], taxa = taxa)
-pp7= plot_volcano(x = resultados[[7]], taxa = taxa)
-pp8= plot_volcano(x = resultados[[8]], taxa = taxa)
-pp9= plot_volcano(x = resultados[[9]], taxa = taxa)
-pp10= plot_volcano(x = resultados[[10]], taxa = taxa)
-pp11= plot_volcano(x = resultados[[11]], taxa = taxa)
-pp12= plot_volcano(x = resultados[[12]], taxa = taxa)
-pp13= plot_volcano(x = resultados[[13]], taxa = taxa)
-pp14= plot_volcano(x = resultados[[14]], taxa = taxa)
-pp15= plot_volcano(x = resultados[[15]], taxa = taxa)
+pp1= plot_volcanog(x = resultados[[1]], taxa = taxa)
+pp2= plot_volcanog(x = resultados[[2]], taxa = taxa)
+pp3= plot_volcanog(x = resultados[[3]], taxa = taxa)
+pp4= plot_volcanog(x = resultados[[4]], taxa = taxa)
+pp5= plot_volcanog(x = resultados[[5]], taxa = taxa)
+pp6= plot_volcanog(x = resultados[[6]], taxa = taxa)
+pp7= plot_volcanog(x = resultados[[7]], taxa = taxa)
+pp8= plot_volcanog(x = resultados[[8]], taxa = taxa)
+pp9= plot_volcanog(x = resultados[[9]], taxa = taxa)
+pp10= plot_volcanog(x = resultados[[10]], taxa = taxa)
+pp11= plot_volcanog(x = resultados[[11]], taxa = taxa)
+pp12= plot_volcanog(x = resultados[[12]], taxa = taxa)
+pp13= plot_volcanog(x = resultados[[13]], taxa = taxa)
+pp14= plot_volcanog(x = resultados[[14]], taxa = taxa)
+pp15= plot_volcanog(x = resultados[[15]], taxa = taxa)
 
 
 pps=plot_grid(pp1+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp2+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp3+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.1, 0.01, 0.01), "cm")), 
