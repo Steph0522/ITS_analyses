@@ -4,8 +4,7 @@ output: html_document
 date: "2024-05-16"
 ---
 
-# Alpha diversity - rarified
-
+# Alpha diversity 
 
 
 -   Load files and packages
@@ -69,8 +68,80 @@ qsa<- q0a %>% full_join(q1a) %>% full_join(q2a) %>% pivot_longer(
 ```
 
 
+```{r, warning=FALSE, message=FALSE}
+#install.packages("ggpubr")
+library(ggpubr)
+depth<- read.delim("../Data/depth.txt")
 
-```{r, message=FALSE, warning=FALSE}
+q0_data<- q0 %>% dplyr::rename("q0"="q") %>% dplyr::select(-order)
+q1_data<- q1 %>% dplyr::rename("q1"="q") %>% dplyr::select(-order)
+q2_data<- q2 %>% dplyr::rename("q2"="q") %>% dplyr::select(-order)
+
+q_data<- q0_data %>% inner_join(q1_data) %>% inner_join(q2_data) %>% 
+  inner_join(depth, by = c("SampleID"="Sample.ID"))
+
+
+q0_vs_depth_fltr <- ggscatter(q_data , 
+                         x = "Frequency", 
+                         y = "q0", 
+                         xlab= "Sequencing depth (number of reads)",
+                         ylab = "q=0",
+                         #ylab="Alpha diversity q=0 (effective number of total ASVs)",
+   add = "reg.line",  # Add regression line
+   add.params = list(color = "#B03A2E", fill = "#566573"), # Customize reg. line
+   conf.int = TRUE, # Add confidence interval
+   cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
+   cor.coeff.args = list(method = "pearson", label.x = 3, label.sep = "\n")
+   )+theme_grey()+
+  theme(legend.title = element_blank(), legend.position = "none")+ labs(y=expression(paste(italic("q"), "=0", " (number of total OTUs/OTUs)")))
+
+q1_vs_depth_fltr <- ggscatter(q_data, 
+                         x = "Frequency", 
+                         y = "q1", 
+                         xlab= "Sequencing depth (number of reads)",
+                         ylab = "q=1",
+                         #ylab="Alpha diversity q=1 (effective number of total ASVs)",
+   add = "reg.line",  # Add regression line
+   add.params = list(color = "#B03A2E", fill = "#566573"), # Customize reg. line
+   conf.int = TRUE, # Add confidence interval
+   cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
+   cor.coeff.args = list(method = "pearson", label.x = 3, label.sep = "\n")
+   )+theme_grey()+
+  theme(legend.title = element_blank(), legend.position = "none")+ labs(y=expression(paste(italic("q"), "=1", " (number of frequent OTUs/OTUs)")))
+
+
+
+q2_vs_depth_fltr <- ggscatter(q_data, 
+                         x = "Frequency", 
+                         y = "q2", 
+                         xlab= "Sequencing depth (number of reads)",
+                         ylab = "q=2",
+                         #ylab="Alpha diversity q=2 (effective number of total ASVs)",
+   add = "reg.line",  # Add regression line
+   add.params = list(color = "#B03A2E", fill = "#566573"), # Customize reg. line
+   conf.int = TRUE, # Add confidence interval
+   cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
+   cor.coeff.args = list(method = "pearson", label.x = 3, label.sep = "\n")
+   )+theme_grey()+
+  theme(legend.title = element_blank(), legend.position = "none")+ labs(y=expression(paste(italic("q"), "=2", " (number of dominant OTUs/OTUs)")))
+
+
+library(ggplot2)
+library(cowplot)
+
+#save plots
+
+#Combine plot
+title_corr_plot <- ggdraw() + draw_label("Alpha diversity depth correlation with samples")
+correlation_plot_q012_fltr <- plot_grid(q0_vs_depth_fltr,q1_vs_depth_fltr,q2_vs_depth_fltr, labels = c("A", "B", "C"), nrow = 1, rel_heights = c(1, 1, 1))
+correlation_plot_q012_fltr
+
+ggsave('../Plots/alpha_corr.png', width = 11, height = 6, dpi = 300, plot =correlation_plot_q012_fltr)
+
+
+```
+
+```{r}
 lm.q0<-qs %>% filter(order=="q0") 
 model0<- lm(val ~ Poligono*Season, data = lm.q0)
 car::leveneTest(val ~ Poligono*Season, data = lm.q0)
@@ -114,7 +185,29 @@ let2<-agricolae::HSD.test(modelinteract2, "interact", console = TRUE)$groups%>%
 #letters_int<-rbind(let0, let1, let2)#%>% rownames_to_column(var="interact") %>% 
   #dplyr::rename(mean=val)
 
+library(agricolae)
 
+get_letters <- function(data, y_frac = 1.10) {
+  m <- aov(lm(val ~ Poligono * Season, data = data))
+  p <- summary(m)[[1]][["Pr(>F)"]][1:3]
+  y_pos <- max(data$val, na.rm = TRUE) * y_frac
+
+  if (p[3] < 0.05) {
+    lets <- HSD.test(aov(lm(val ~ interact, data = data)), "interact")$groups %>%
+      rownames_to_column("interact") %>%
+      separate(interact, c("Poligono", "Season"), remove = FALSE) %>%
+      mutate(xpos = as.numeric(factor(Season, levels = c("Dry", "Rainy"))))
+  } else {
+    lets <- HSD.test(aov(lm(val ~ Poligono, data = data)), "Poligono")$groups %>%
+      rownames_to_column("Poligono") %>%
+      mutate(xpos = 1.5)
+  }
+  mutate(lets, val = y_pos)
+}
+
+lab0 <- get_letters(lm.q0)
+lab1 <- get_letters(lm.q1)
+lab2 <- get_letters(lm.q2)
 
 ```
 
@@ -126,12 +219,13 @@ colors = carto_pal(6, "Safe")
 my_colors=carto_pal(2, "Earth")
 my_colors
 
+fmt_p <- function(p) ifelse(p < 0.001, "<0.001", format(round(p, 3), nsmall = 3))
 strip <- strip_themed(background_x = elem_list_rect(fill = colors))
 
 labels <- let0 %>% rownames_to_column(var = "interact") %>% 
   separate("interact", c("Poligono", "Season"), remove = F)
 
-labels<- labels  %>% mutate(val=600)
+labels<- labels  %>% mutate(val=1600)
 
 
 a <- qs %>%   
@@ -147,27 +241,28 @@ a <- qs %>%
         axis.title.x = element_blank(),
         axis.ticks.x = element_blank())+
   ylab("Effective number of OTUs")+
- stat_compare_means(aes(group = Season), method = "t.test",label = "p.format")+
+ #stat_compare_means(aes(group = Season), method = "t.test",label = "p.format")+
   scale_fill_manual(values = c("#A16928" ,"#2887a1"))+theme_grey()+
      theme(axis.text.x = element_blank(), 
         axis.ticks.x = element_blank(),
         strip.text.x = element_text(size = 14, face = "bold", color="white"),
         strip.text.y = element_text(size = 16, face="bold.italic", colour = "white"),
        axis.title = element_text(size = 18))+
-  geom_label(data = labels, aes(label=groups),
-                hjust = 1, vjust = 1)+
-   ggtitle(paste0("Polygon =",signif(pvalues0[1], digits = 3), "; ",
-                  "Season =",signif(pvalues0[2], digits = 3), "; ",
-                  "Polygon*Season =",signif(pvalues0[3], digits = 3)))+ theme(
-                  strip.background.y = element_rect(
+geom_label(data = lab0, aes(x = xpos, y = val, label = groups), 
+           inherit.aes = FALSE)+
+ggtitle(paste0("Polygon = ", fmt_p(pvalues0[1]), "; ",
+               "Season = ", fmt_p(pvalues0[2]), "; ",
+               "Polygon*Season = ", fmt_p(pvalues0[3])))+
+  theme(strip.background.y = element_rect(
      color="grey", fill="black", size=1, linetype="solid"),
      strip.background.x = element_rect(colour = "black", linetype = "solid", size = 1))
+  
 
  
 labels <- let1 %>% rownames_to_column(var = "interact") %>% 
   separate("interact", c("Poligono", "Season"), remove = F)
 
-labels<- labels  %>% mutate(val=180)
+labels<- labels  %>% mutate(val=250)
 
 
 b <- qs %>%   
@@ -183,18 +278,17 @@ b <- qs %>%
         axis.title.x = element_blank(),
         axis.ticks.x = element_blank())+
   ylab("Effective number of OTUs")+
- stat_compare_means(aes(group = Season), method = "t.test",label = "p.format")+
+# stat_compare_means(aes(group = Season), method = "t.test",label = "p.format")+
   scale_fill_manual(values = c("#A16928" ,"#2887a1"))+theme_grey()+
      theme(axis.text.x = element_blank(), 
         axis.ticks.x = element_blank(),
         strip.text.x = element_text(size = 14, face = "bold", color="white"),
         strip.text.y = element_text(size = 16, face="bold.italic", colour = "white"),
        axis.title = element_text(size = 18))+
-  geom_label(data = labels, aes(label=groups),
-                hjust = 1, vjust = 1)+
-   ggtitle(paste0("Polygon =",signif(pvalues1[1], digits = 3), "; ",
-                  "Season =",signif(pvalues1[2], digits = 3), "; ",
-                  "Polygon*Season =",signif(pvalues1[3], digits = 3)))+ theme(
+geom_label(data = lab1, aes(x = xpos, y = val, label = groups), 
+           inherit.aes = FALSE)+ggtitle(paste0("Polygon = ", fmt_p(pvalues1[1]), "; ",
+               "Season = ", fmt_p(pvalues1[2]), "; ",
+               "Polygon*Season = ", fmt_p(pvalues1[3])))+ theme(
                   strip.background.y = element_rect(
      color="grey", fill="black", size=1, linetype="solid"),
      strip.background.x = element_rect(colour = "black", linetype = "solid", size = 1))+
@@ -206,7 +300,7 @@ b <- qs %>%
 labels <- let2 %>% rownames_to_column(var = "interact") %>% 
   separate("interact", c("Poligono", "Season"), remove = F)
 
-labels<- labels  %>% mutate(val=70)
+labels<- labels  %>% mutate(val=80)
 
 c <- qs %>%   
   mutate(
@@ -221,22 +315,26 @@ c <- qs %>%
         axis.title.x = element_blank(),
         axis.ticks.x = element_blank())+
   ylab("Effective number of OTUs")+
- stat_compare_means(aes(group = Season), method = "t.test",label = "p.format")+
+ #stat_compare_means(aes(group = Season), method = "t.test",label = "p.format")+
   scale_fill_manual(values = c("#A16928" ,"#2887a1"))+theme_grey()+
      theme(axis.text.x = element_text(size = 14, colour = "black"), 
       #  axis.ticks.x = element_blank(),
        strip.text.x = element_text(size = 14, face = "bold", color="white"),
         strip.text.y = element_text(size = 16, face="bold.italic", colour = "white"),
        axis.title = element_text(size = 18))+
-  geom_label(data = labels, aes(label=groups),
-                hjust = 1, vjust = 1)+
-   ggtitle(paste0("Polygon =",signif(pvalues2[1], digits = 3), "; ",
-                  "Season =",signif(pvalues2[2], digits = 3), "; ",
-                  "Polygon*Season =",signif(pvalues2[3], digits = 3)))+ theme(
+geom_label(data = lab2, aes(x = xpos, y = val, label = groups), 
+           inherit.aes = FALSE)+
+ggtitle(paste0("Polygon = ", fmt_p(pvalues2[1]), "; ",
+               "Season = ", fmt_p(pvalues2[2]), "; ",
+               "Polygon*Season = ", fmt_p(pvalues2[3])))+ theme(
                   strip.background.y = element_rect(
      color="grey", fill="black", size=1, linetype="solid"),
      strip.background.x = element_rect(colour = "black", linetype = "solid", size = 1))+
   theme(strip.text.x = element_blank())
+ 
+
+ 
+
 ```
 
 
@@ -251,7 +349,6 @@ alpha<- plot_grid(a + theme(legend.position = "none", axis.title.x = element_bla
                   c+ theme(legend.position = "none")+ylab(""),
                   labels = c("A", "B", "C"),
                   ncol = 1)
-
 alpha
 
 ggsave('../Plots/alpha_rar.png', width = 11, height = 11, dpi = 300, plot =alpha)

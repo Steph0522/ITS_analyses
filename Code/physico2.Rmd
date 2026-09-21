@@ -121,6 +121,20 @@ library(plyr)
 mean$conservation2 <- plyr::revalue(mean$variable, conservation_status)
 melted_df$conservation2 <- plyr::revalue(melted_df$variable, conservation_status)
 
+pvals <- melted_df %>%
+  dplyr::group_by(conservation2) %>%
+  dplyr::summarise(p = summary(aov(value ~ Poligono))[[1]][["Pr(>F)"]][1]) %>%
+  dplyr::mutate(label = ifelse(p < 0.001, 
+                             "p < 0.001", 
+                             paste0("p = ", format(round(p, 3), nsmall = 3)))) %>%
+  dplyr::mutate(Poligono = "P3")
+
+pvals <- pvals %>%
+  dplyr::left_join(
+    melted_df %>% 
+      dplyr::group_by(conservation2) %>% 
+      dplyr::summarise(value = max(value, na.rm = TRUE) * 1.05),
+    by = "conservation2")
 
 
 fq<-ggline(melted_df, x="Poligono", y="value",
@@ -137,7 +151,9 @@ fq<-ggline(melted_df, x="Poligono", y="value",
      color="black", fill="black", size=1.5, linetype="solid"),
      strip.text = element_text(colour = "white", face = "bold"),
      legend.position = "none")+
-  stat_compare_means(method = "anova", label = "p.format", label.x = 2.5)
+#  stat_compare_means(method = "anova", label = "p.format", label.x = 2.5)
+  geom_text(data = pvals, aes(x = Poligono, y = value, label = label), 
+          inherit.aes = FALSE, size = 4)
 fq
 
 ggsave('../Plots/fisico-season-mod2.png', width =13, height = 6, dpi = 300, plot =fq)

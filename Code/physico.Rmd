@@ -208,14 +208,19 @@ melted_df$conservation2 <- plyr::revalue(melted_df$variable, conservation_status
 labels <- all.lm %>%  t()  %>% 
   as.data.frame() %>%
   mutate(letter= c("A", "B", "C", "D"))  %>%
- rownames_to_column(var = "variable") %>%
-  mutate(`Poligono       `=case_when(
-    `Poligono       `==0 ~ "0.000",
-    TRUE ~ as.character(`Poligono       `))) %>%
-  mutate(`Season         `=case_when(
-   `Season         `==0 ~ "0.000" ,
-    TRUE ~ as.character(`Season         `))) %>% 
-  mutate(labels = paste0(letter, "       Season = ",`Season         `, ", Polygon = ", `Poligono       `, ", Season:Polygon = ", signif(`Season:Poligono`, digits = 3)))
+  rownames_to_column(var = "variable") %>%
+  mutate(`Poligono       ` = case_when(
+    `Poligono       ` < 0.001 ~ "< 0.001",
+    TRUE ~ paste0("= ", `Poligono       `))) %>%
+  mutate(`Season         ` = case_when(
+    `Season         ` < 0.001 ~ "< 0.001",
+    TRUE ~ paste0("= ", `Season         `))) %>%
+  mutate(`Season:Poligono` = case_when(
+    `Season:Poligono` < 0.001 ~ "< 0.001",
+    TRUE ~ paste0("= ", signif(`Season:Poligono`, digits = 3)))) %>%
+  mutate(labels = paste0(letter, "       Season ", `Season         `, 
+                         ", Polygon ", `Poligono       `, 
+                         ", Season:Polygon ", `Season:Poligono`))
 
 
 #labels <- labels %>% rownames_to_column(var = "conservation2")

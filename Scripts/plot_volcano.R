@@ -49,8 +49,9 @@ plot_volcano <- function(x, taxa, cutoff.pval = 0.05) {
   
   # Crea el gráfico
   ggplot(x, aes(x = diff.btw, y = log_pvalue)) +
-    geom_point(data = x[!called, ], color = "gray", size = 3, shape = 19) +  # Puntos no significativos en gris
-    geom_point(data = x[called, ], aes(color = ifelse(diff.btw < 0, "blue", "red")), size = 3, shape = 19) +  # Significativos en azul o rojo
+    geom_point(data = x[!called, ], color = "gray", size = 1.5, shape = 19) +
+    geom_point(data = x[called, ], aes(color = ifelse(diff.btw < 0, "blue", "red")),
+               size = 1.5, shape = 19) +
     geom_vline(xintercept = c(-1.5, 1.5), color = 'black', linetype = 'dashed') +
     geom_hline(yintercept = -1 * log10(cutoff.pval), color = 'black', linetype = 'dashed') +
     labs(x = expression("Median Log"[2]~" Difference"), 
@@ -58,15 +59,20 @@ plot_volcano <- function(x, taxa, cutoff.pval = 0.05) {
     theme_minimal() +
     scale_color_manual(values = c("blue" = "blue", "red" = "red")) +  # Define los colores manualmente
     # Agregar anotaciones para los taxones seleccionados
-    geom_text(data = top_taxa, aes(x = diff.btw, y = log_pvalue, label = taxa), 
-              vjust = -0.5, color = "black", fontface = "italic", size=2) +  # Texto en cursiva
+    ggrepel::geom_text_repel(
+      data = top_taxa, aes(x = diff.btw, y = log_pvalue, label = taxa),
+      color = "black", fontface = "italic", size = 2.7,
+      box.padding = 0.4, min.segment.length = 0.2,
+      segment.size = 0.2, max.overlaps = Inf, seed = 42) +
     annotate("text", x = min(x$diff.btw)+1, y = 0.1, 
              label = colnames(x)[grep("rab.win", colnames(x))[1]], 
              color = "black", size = 3, vjust = 0) +
     annotate("text", x = max(x$diff.btw)-1, y = 0.1, 
              label = colnames(x)[grep("rab.win", colnames(x))[2]], 
              color = "black", size = 3, vjust = 0) +
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    scale_x_continuous(expand = expansion(mult = 0.18)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) 
 }
 
 # Uso de la función

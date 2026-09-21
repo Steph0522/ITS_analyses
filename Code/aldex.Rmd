@@ -235,12 +235,12 @@ p6= plot_volcanop(aldex_p6, taxa)
 ```{r, warning=FALSE, message=FALSE, fig.align='center', fig.height=10, fig.width=8}
 library(cowplot)
 
-all=plot_grid(p1 +xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
-              p2+xlab("")+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
-              p3 +xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), 
-              p4+ xlab("")+ylab("")+theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), 
-              p5+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
-              p6+ ylab("")+theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), 
+all=plot_grid(p1 +xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")),
+              p2+xlab("")+ylab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")),
+              p3 +xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), 
+              p4+ xlab("")+ylab("")+theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), 
+              p5+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")),
+              p6+ ylab("")+theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), 
               ncol = 2, nrow = 3, align = "hv", labels = "AUTO")
 
 all
@@ -322,7 +322,7 @@ source("../Scripts/plot_volcano.R")
 ```
 
 ```{r, echo=FALSE}
-#saveRDS(resultados, "../Data/resultados.RDS")
+saveRDS(resultados, "../Data/resultados.RDS")
 resultados = readRDS("../Data/resultados.RDS")
 ```
 
@@ -347,17 +347,17 @@ pp14= plot_volcano(x = resultados[[14]], taxa = taxa)
 pp15= plot_volcano(x = resultados[[15]], taxa = taxa)
 
 
-pps=plot_grid(pp1+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp2+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp3+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.1, 0.01, 0.01), "cm")), 
-              pp4+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp5+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm"))+xlab(""), pp6+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), 
-              pp7+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp8+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp9+xlab("")+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),
-              pp10+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),pp11+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp12+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm"))+xlab(""), 
-              pp13+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")),pp14+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), pp15+ylab("")+ theme(plot.margin = unit(c(0.01, 0.01, 0.01, 0.01), "cm")), ncol = 3, nrow = 5, align = "hv", labels = "AUTO")
+pps=plot_grid(pp1+xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), pp2+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), pp3+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), 
+              pp4+xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), pp5+ylab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm"))+xlab(""), pp6+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), 
+              pp7+xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), pp8+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), pp9+xlab("")+ylab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")),
+              pp10+xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")),pp11+ylab("")+xlab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), pp12+ylab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm"))+xlab(""), 
+              pp13+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")),pp14+ylab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), pp15+ylab("")+ theme(plot.margin = unit(c(0.3, 0.4, 0.2, 0.2), "cm")), ncol = 3, nrow = 5, align = "hv", labels = "AUTO")
 
 
 pps
 
 
-ggsave("../Plots/aldex_polss_volcano_bh.png", plot = pps, device = "png", width = 11, height = 13, dpi = 300)
+ggsave("../Plots/aldex_polss_volcano_bh.png", plot = pps, device = "png", width = 13, height = 13, dpi = 300)
 
 ```
 

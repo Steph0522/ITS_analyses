@@ -3,36 +3,35 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 
-plot_volcanop <- function(x, taxa, cutoff.pval = 0.05) {
-  # Asegúrate de que 'wi.ep' esté definido
-  if (!"wi.ep" %in% colnames(x)) {
-    stop("El dataframe debe contener la columna 'wi.ep'.")
+plot_volcano <- function(x, taxa, cutoff.pval = 0.05) {
+  # Asegúrate de que 'wi.eBH' esté definido
+  if (!"wi.eBH" %in% colnames(x)) {
+    stop("El dataframe debe contener la columna 'wi.eBH'.")
   }
   
   # Calcula p.add y all.p
-  p.add <- min(x$wi.ep[x$wi.ep > 0]) / 10
-  called <- x$wi.ep <= cutoff.pval
-  x$all.p <- x$wi.ep + p.add
+  p.add <- min(x$wi.eBH[x$wi.eBH > 0]) / 10
+  called <- x$wi.eBH <= cutoff.pval
+  x$all.p <- x$wi.eBH + p.add
   
   # Crea una nueva columna para el log10 de p-values
   x$log_pvalue <- -1 * log10(x$all.p)
   
   # Procesa los datos
   x_processed <- x %>%
-    rownames_to_column(var = "Feature.ID") %>%
-    inner_join(taxa, by = "Feature.ID") %>%
-    mutate(taxa = case_when(
-      str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
-      str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
-      str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
-      str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
-      TRUE ~ NA_character_
-    ))
+    rownames_to_column(var = "taxa")# %>%
+ #   inner_join(taxa, by = "taxa") %>%
+  #  mutate(taxa = case_when(
+   #   str_detect(Taxon, "g__") ~ str_extract(Taxon, "(?<=g__)[^_;]+"),
+    #  str_detect(Taxon, "f__") ~ str_extract(Taxon, "(?<=f__)[^_;]+"),
+     # str_detect(Taxon, "c__") ~ str_extract(Taxon, "(?<=c__)[^_;]+"),
+      #str_detect(Taxon, "o__") ~ str_extract(Taxon, "(?<=o__)[^_;]+"),
+      #TRUE ~ NA_character_
+    #))
   
   # Filtra solo los significativos
   significant_x <- x_processed %>%
-    filter(all.p < cutoff.pval)
-  
+    filter(wi.eBH <= cutoff.pval, !is.na(taxa))
   # Filtra los 3 taxones con los mayores effect sizes (rojos y azules)
   top_red_taxa <- significant_x %>%
     filter(diff.btw > 0) %>%
@@ -49,8 +48,8 @@ plot_volcanop <- function(x, taxa, cutoff.pval = 0.05) {
   
   # Crea el gráfico
   ggplot(x, aes(x = diff.btw, y = log_pvalue)) +
-    geom_point(data = x[!called, ], color = "gray", size = 2, shape = 19) +  # Puntos no significativos en gris
-    geom_point(data = x[called, ], aes(color = ifelse(diff.btw < 0, "blue", "red")), size = 2, shape = 19) +  # Significativos en azul o rojo
+    geom_point(data = x[!called, ], color = "gray", size = 3, shape = 19) +  # Puntos no significativos en gris
+    geom_point(data = x[called, ], aes(color = ifelse(diff.btw < 0, "blue", "red")), size = 3, shape = 19) +  # Significativos en azul o rojo
     geom_vline(xintercept = c(-1.5, 1.5), color = 'black', linetype = 'dashed') +
     geom_hline(yintercept = -1 * log10(cutoff.pval), color = 'black', linetype = 'dashed') +
     labs(x = expression("Median Log"[2]~" Difference"), 
@@ -61,8 +60,8 @@ plot_volcanop <- function(x, taxa, cutoff.pval = 0.05) {
     ggrepel::geom_text_repel(
       data = top_taxa, 
       aes(x = diff.btw, y = log_pvalue, label = taxa),
-      color = "black", fontface = "italic", size = 2.7,
-      box.padding = 0.6, point.padding = 0.5,
+      color = "black", fontface = "italic", size = 2.5,
+      box.padding = 0.4, point.padding = 0.3,
       min.segment.length = 0.2, segment.size = 0.2,
       max.overlaps = Inf, seed = 42) +  # Texto en cursiva
     annotate("text", x = min(x$diff.btw)+1, y = 0.1, 
@@ -77,5 +76,5 @@ plot_volcanop <- function(x, taxa, cutoff.pval = 0.05) {
 }
 
 # Uso de la función
- #lot_volcano(x = x, taxa = taxa)
+# plot_volcano(x = x, taxa = taxa)
 
