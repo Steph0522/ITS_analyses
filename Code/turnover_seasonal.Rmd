@@ -13,6 +13,7 @@ library(vegan)
 library(colorRamps)
 library(ggpubr)
 library(ggordiplots)
+library(rcartocolor)
 
 table<- read_qza("../Data/table_SMOQ_rar.qza")$data
 
@@ -76,7 +77,12 @@ table_ness<- table_nes %>%t() %>% as.data.frame() %>%
   dplyr::rename(beta=V1)
 
 model<-aov(beta~Poligono, data=table_turns)
+shapiro.test(residuals(model)) #normality
+bartlett.test(beta ~ Poligono, data = table_turns) #homocedasticity
+car::leveneTest(beta ~ factor(Poligono), data = table_turns)#homocedasticity
 out <- agricolae::HSD.test(model,"Poligono", group=TRUE,console=FALSE)
+
+
 g<- data.frame(out$groups) %>% rownames_to_column(var = "Poligono") %>% dplyr::select(-beta)
 data<- data.frame(Poligono=c("P1", "P2", "P3", "P4", "P5", "P6"),
                   beta=rep(0.85,6)) %>% inner_join(g, by = "Poligono")

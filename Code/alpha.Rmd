@@ -154,7 +154,17 @@ modelinteract0<- aov(lm(val ~ interact, data = lm.q0))
 agricolae::HSD.test(modelinteract0, "interact", console = TRUE)
 let0<-agricolae::HSD.test(modelinteract0, "interact", console = TRUE)$groups %>% 
   mutate(order="q0")
-
+#not normal
+nb <- MASS::glm.nb(val ~ interact, data=lm.q0)
+car::Anova(nb)
+emm<-emmeans::emmeans(nb,  ~ interact)
+let0 <- multcomp::cld(emm, 
+                     alpha = 0.05, 
+                     Letters = LETTERS) %>% rename(groups=.group) %>% 
+  mutate_at(c("groups"), tolower) %>% 
+  remove_rownames() %>%
+  column_to_rownames(var = "interact")%>%
+  mutate(order="q0")
 
 lm.q1<-qs %>% filter(order=="q1") 
 model1<- lm(val ~ Poligono*Season, data = lm.q1)
