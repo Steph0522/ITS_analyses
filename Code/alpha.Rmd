@@ -155,12 +155,13 @@ agricolae::HSD.test(modelinteract0, "interact", console = TRUE)
 let0<-agricolae::HSD.test(modelinteract0, "interact", console = TRUE)$groups %>% 
   mutate(order="q0")
 #not normal
-nb <- MASS::glm.nb(val ~ interact, data=lm.q0)
-car::Anova(nb)
+nb0 <- MASS::glm.nb(val ~ Poligono*Season, data = lm.q0)
+nb  <- MASS::glm.nb(val ~ interact, data = lm.q0)         
+pvalues0 <- car::Anova(nb0)[["Pr(>Chisq)"]]   # Poligono, Season, interacción
 emm<-emmeans::emmeans(nb,  ~ interact)
 let0 <- multcomp::cld(emm, 
                      alpha = 0.05, 
-                     Letters = LETTERS) %>% rename(groups=.group) %>% 
+                     Letters = LETTERS,reversed = TRUE) %>% rename(groups=.group) %>% 
   mutate_at(c("groups"), tolower) %>% 
   remove_rownames() %>%
   column_to_rownames(var = "interact")%>%
@@ -214,7 +215,11 @@ get_letters <- function(data, y_pos) {
   mutate(lets, val = y_pos)
 }
 
-lab0 <- get_letters(lm.q0, 1600)
+lab0 <- let0 %>% rownames_to_column("interact") %>%
+  separate(interact, c("Poligono", "Season"), remove = FALSE) %>%
+  mutate(groups = trimws(groups),   # cld rellena las letras con espacios
+         xpos = as.numeric(factor(Season, levels = c("Dry", "Rainy"))),
+         val = 1600)
 lab1 <- get_letters(lm.q1, 250)
 lab2 <- get_letters(lm.q2, 80)
 
